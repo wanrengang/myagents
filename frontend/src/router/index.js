@@ -1,0 +1,55 @@
+// 路由定义：落地页 → 登录页 → 管理后台（含鉴权守卫）
+import { createRouter, createWebHistory } from 'vue-router'
+
+const routes = [
+  {
+    path: '/',
+    name: 'landing',
+    component: () => import('../views/LandingView.vue'),
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue'),
+  },
+  {
+    path: '/app',
+    component: () => import('../layouts/MainLayout.vue'),
+    redirect: '/app/home',
+    children: [
+      { path: 'home', name: 'home', component: () => import('../views/HomeView.vue') },
+      { path: 'chat', name: 'chat', component: () => import('../views/ChatView.vue') },
+      { path: 'history', name: 'history', component: () => import('../views/HistoryView.vue') },
+      { path: 'trace', name: 'trace', component: () => import('../views/TraceView.vue') },
+      { path: 'admin', name: 'admin', component: () => import('../views/AdminView.vue') },
+      { path: 'users', name: 'users', component: () => import('../views/UsersView.vue') },
+      { path: 'resources', name: 'resources', component: () => import('../views/ResourcesView.vue') },
+      { path: 'change-password', name: 'change-password', component: () => import('../views/ChangePasswordView.vue') },
+    ],
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  // 落地页和登录页不需要登录
+  if (to.name === 'landing' || to.name === 'login') {
+    // 已登录用户访问登录页 → 跳到后台
+    if (to.name === 'login' && token) {
+      next({ name: 'home' })
+    } else {
+      next()
+    }
+  } else if (!token) {
+    // 受保护路由 → 跳登录
+    next({ name: 'login', query: { next: to.fullPath } })
+  } else {
+    next()
+  }
+})
+
+export default router

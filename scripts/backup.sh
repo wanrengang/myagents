@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# myagents 数据库备份脚本
+# UniEmployee 数据库备份脚本
 # ---------------------------------------------------------------
 # 把 catalog.db / conversations.db / demo.db / store.db / traces.db
 # 打包成带时间戳的 tar.gz 归档，并清理过旧的备份。
@@ -12,7 +12,7 @@
 #   - 保留份数  由环境变量 BACKUP_KEEP 控制（默认 7，设 0 表示不清理）
 #
 # 建议：定时任务里每天凌晨跑一次，例如
-#   crontab -e  ->  0 3 * * * /path/to/scripts/backup.sh >> /var/log/myagents-backup.log 2>&1
+#   crontab -e  ->  0 3 * * * /path/to/scripts/backup.sh >> /var/log/uniemployee-backup.log 2>&1
 #
 # 注意：SQLite 有 -wal/-shm 临时文件。为获得一致性快照，建议在备份前
 # 短暂停止服务（或确保无写入）；否则直接拷 .db 可能落在未 checkpoint 的状态。
@@ -24,7 +24,7 @@ DATA_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 BACKUP_DIR="${2:-$DATA_DIR/backups}"
 KEEP="${BACKUP_KEEP:-7}"
 TS="$(date +%Y%m%d-%H%M%S)"
-ARCHIVE="$BACKUP_DIR/myagents-$TS.tar.gz"
+ARCHIVE="$BACKUP_DIR/uniemployee-$TS.tar.gz"
 
 DBS="catalog.db conversations.db demo.db store.db traces.db"
 
@@ -48,7 +48,7 @@ echo "[$(date '+%F %T')] 备份 ${FILES[*]} -> $ARCHIVE"
 
 # 清理旧备份：按修改时间倒序，保留最近 KEEP 份
 if [ "$KEEP" -gt 0 ]; then
-  ls -1t "$BACKUP_DIR"/myagents-*.tar.gz 2>/dev/null \
+  ls -1t "$BACKUP_DIR"/uniemployee-*.tar.gz 2>/dev/null \
     | tail -n +$((KEEP + 1)) \
     | while read -r old; do
         echo "[$(date '+%F %T')] 删除旧备份 $old"
@@ -57,4 +57,4 @@ if [ "$KEEP" -gt 0 ]; then
 fi
 
 echo "[$(date '+%F %T')] 完成。当前保留最近 $KEEP 份。"
-ls -1ht "$BACKUP_DIR"/myagents-*.tar.gz 2>/dev/null | head -n "$KEEP"
+ls -1ht "$BACKUP_DIR"/uniemployee-*.tar.gz 2>/dev/null | head -n "$KEEP"

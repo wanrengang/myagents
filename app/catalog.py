@@ -73,6 +73,7 @@ def init():
     con.commit()
     _migrate_soft_delete(con)
     _migrate_must_change_password(con)
+    _migrate_remove_refund_gate(con)
     con.close()
 
 
@@ -99,6 +100,34 @@ def _migrate_must_change_password(con):
     if "must_change_password" not in cols:
         con.execute("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0")
     con.commit()
+
+
+def _migrate_remove_refund_gate(con):
+    """撤 start_refund 的外层审批 gate（Point2：审批内化进 workflow 状态机）。
+
+    背景：老实现里退款审批由外层 agent 的 interrupt_on 拦截（tools.start_refund
+    .needs_approval=["approve","reject"]）。Point2 把审批内化进 refund StateGraph
+    的 await_approval 节点（interrupt），外层 gate 必须撤掉，否则双重 interrupt。
+
+    幂等：needs_approval 已为 NULL 时跳过。同时刷新 employees 表的 interrupt_on
+    存值（编译时也会实时重算，此处保证 DB 一致，避免管理后台展示陈旧状态）。
+    """
+    row = con.execute("SELECT needs_approval FROM tools WHERE id='start_refund'").fetchone()
+    if not row or not row["needs_approval"]:
+        return  # 已撤或工具不存在
+    con.execute("UPDATE tools SET needs_approval=NULL WHERE id='start_refund'")
+    # 刷新所有挂了 start_refund 的员工的 interrupt_on 存值
+    for emp in con.execute(
+        "SELECT e.id, e.interrupt_on FROM employees e "
+        "JOIN employee_tools et ON et.employee_id=e.id "
+        "WHERE et.tool_id='start_refund' AND e.deleted_at IS NULL"
+    ).fetchall():
+        old = json.loads(emp["interrupt_on"]) if emp["interrupt_on"] else {}
+        old.pop("start_refund", None)  # 撤掉外层 gate
+        con.execute("UPDATE employees SET interrupt_on=? WHERE id=?",
+                    (json.dumps(old, ensure_ascii=False), emp["id"]))
+    con.commit()
+    print("[migrate] 已撤 start_refund 外层审批 gate（Point2 内化审批）")
 
 
 # ---------------------------------------------------------------------------
@@ -393,12 +422,43 @@ def seed_if_empty():
     # --- sops（可勾选流程文档，对齐原 yaml 的 sop 字段语义）---
     sops = [
         ("sop_refund", "退款流程（刚性）", "用户要求退款时调用 start_refund，自动进入人工审批",
-         "## 退款流程（刚性）\n用户要求退款退货时，调用 start_refund 工具。"
-         "固定三步：校验订单→计算金额→生成退款单，调用前会自动进入人工审批。"),
+         "## 退款流程（刚性）\n用户要求退款退货时，调用 start_refund 工具发起退款流程。"
+         "固定三步：校验订单 → 计算金额 → 审批 → 生成退款单。\n\n"
+         "### 执行路径\n"
+         "1. **校验订单**：系统自动检查订单是否存在、已签收、签收 7 天内\n"
+         "2. **计算金额**：按订单实际支付金额计算退款\n"
+         "3. **人工审批**：流程卡在审批节点，等待管理员批准或拒绝\n"
+         "4. **生成退款单**：审批通过后自动生成退款单号\n\n"
+         "### 退款条件\n"
+         "- 仅已签收订单可退款\n"
+         "- 签收超过 7 天不可无理由退款（可走售后维修）\n"
+         "- 运输中订单请先签收后再申请退款\n\n"
+         "### 注意事项\n"
+         "- 退款将原路返回，3-5 个工作日到账\n"
+         "- 审批不可跳过，必须等待人工处理"),
         ("sop_complaint", "投诉处理（软性）", "用户表达不满时按 complaint-handling 技能规程执行",
          "## 投诉处理（软性）\n用户表达不满或投诉时，必须先用 read_file 读取 "
-         "/skills/complaint-handling/SKILL.md，然后严格按其中的规程执行"
-         "（安抚→核实→create_ticket 登记工单→给方案）。"),
+         "/skills/complaint-handling/SKILL.md，然后严格按其中的规程执行。\n\n"
+         "### 执行步骤（按顺序，不可跳过）\n\n"
+         "#### 步骤 1：安抚\n"
+         "先共情一句话再处理，不辩解、不推责。\n"
+         "- 句式参考：「非常抱歉给您带来了不便」「我完全理解您的心情」\n"
+         "- 绝对禁止：「这是正常的」「您可能没看清楚」「其他用户都没问题」\n\n"
+         "#### 步骤 2：核实\n"
+         "- 先问订单号（如未提供），用 order_query 查订单详情\n"
+         "- 用 kb_search 查该产品是否有已知问题或常见故障处理\n"
+         "- 必要时查 customer_profile 了解用户等级（VIP 优先处理）\n\n"
+         "#### 步骤 3：分类定级并登记工单\n"
+         "紧急度判断标准：\n"
+         "- urgent（安全风险/大面积故障/VIP 客诉）→ 2 小时响应\n"
+         "- high（功能故障/严重影响使用）→ 24 小时响应\n"
+         "- normal（一般不满/轻微问题/咨询类）→ 48 小时响应\n\n"
+         "#### 步骤 4：给出答复\n"
+         "告知用户工单号、预计响应时间、一个当下可执行的临时方案\n\n"
+         "### 禁忌\n"
+         "- 不要在未登记工单前承诺赔偿金额\n"
+         "- 不要与用户争辩\n"
+         "- 不要把用户晾着去查东西"),
     ]
     for s in sops:
         cur.execute("INSERT OR IGNORE INTO sops VALUES(?,?,?,?)", s)
@@ -588,7 +648,7 @@ def catalog() -> dict:
                   for t in allrows("tools")],
         "knowledge_bases": [{"id": k["id"], "name": k["name"], "description": k["description"]}
                             for k in allrows("knowledge_bases")],
-        "sops": [{"id": s["id"], "name": s["name"], "description": s["description"]}
+        "sops": [{"id": s["id"], "name": s["name"], "description": s["description"], "content": s["content"]}
                  for s in allrows("sops")],
         "connectors": [{"id": c["id"], "name": c["name"], "description": c["description"]}
                        for c in allrows("connectors")],

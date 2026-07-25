@@ -1,4 +1,4 @@
-# 数字员工平台（myagents）
+# UniEmployee 数字员工平台
 
 基于 **deepagents**（LangGraph）的多租户数字员工运行平台，跑通五层能力模型
 （Employee → Workflow/SOP → Skill → Connector → Tool）+ HITL 审批 + 跨会话记忆 +

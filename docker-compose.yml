@@ -1,8 +1,8 @@
 services:
-  myagents:
+  uniemployee:
     build: .
-    image: myagents:latest
-    container_name: myagents
+    image: uniemployee:latest
+    container_name: uniemployee
     ports:
       - "8787:8787"
     environment:

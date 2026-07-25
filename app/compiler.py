@@ -8,6 +8,7 @@
 多员工：本文件是纯函数（spec 进、agent 出），新增员工只需加一个
 employees/*.yaml，编译层零改动。所有工具集中登记在 ALL_LOCAL_TOOLS。
 """
+import re
 import sys
 from pathlib import Path
 
@@ -66,6 +67,47 @@ def make_kb_search(entries: list[dict]):
         return "\n\n".join(
             f"[{it['id']}] {it['title']}\n{it['content']}" for _, it in hits[:3])
     return kb_search
+
+
+def _extract_skill_triggers(skill_md: str) -> str:
+    """从 SKILL.md 提取触发条件文本。
+
+    优先级：
+      1. 正文 `## 触发条件` 或 `## 适用范围` 段落（语义最精确）；
+      2. 兜底 frontmatter `description`（所有 SKILL.md 都有，含"当…时"触发语义）。
+    """
+    m = re.search(r"^##\s+(?:触发条件|适用范围)\s*\n(.+?)(?=^##\s|\Z)",
+                  skill_md, re.MULTILINE | re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    m = re.search(r"^description:\s*(.+)$", skill_md, re.MULTILINE)
+    if m:
+        return m.group(1).strip()
+    return ""
+
+
+def _build_skill_routing(skills: list[dict]) -> str:
+    """生成确定性技能路由指令，拼进 system_prompt。
+
+    让模型在 system_prompt 里就看到「什么情况调什么技能」，而不是靠
+    skills=["/skills/"] 挂载后模型自觉 read_file——后者无程序化保证，
+    模型可能跳过。本函数把触发条件展开成明确指令，满足条件必须先查阅规程。
+    """
+    if not skills:
+        return ""
+    lines = [
+        "",
+        "## 技能路由（确定性激活）",
+        "以下是你已挂载的技能。当用户消息满足某技能的触发条件时，",
+        "必须先 read_file 查阅完整规程再执行，不可凭记忆跳过：",
+        "",
+    ]
+    for s in skills:
+        lines.append(f"### {s['name']}")
+        lines.append(f"触发条件：{s.get('triggers') or s.get('description', '（未指定）')}")
+        lines.append(f"规程路径：/skills/{s['name']}/SKILL.md")
+        lines.append("")
+    return "\n".join(lines)
 
 
 async def _assemble_tools(spec: EmployeeSpec, checkpointer=None) -> tuple[list, object]:
@@ -172,7 +214,8 @@ async def compile_agent(spec: EmployeeSpec, checkpointer, store, user_id: str | 
         await store.aput(namespace, f"/{skill_name}/SKILL.md", create_file_data(skill_md))
         desc = next((l.split(":", 1)[1].strip() for l in skill_md.splitlines()
                      if l.startswith("description:")), "")
-        skill_summaries.append({"name": skill_name, "description": desc})
+        triggers = _extract_skill_triggers(skill_md)
+        skill_summaries.append({"name": skill_name, "description": desc, "triggers": triggers})
 
     # --- 记忆文件不在编译期播种：改为运行时按 (user_id, emp_id) 懒初始化
     #     （见 runtime.ensure_user_memory），实现用户级记忆隔离 ---
@@ -182,6 +225,7 @@ async def compile_agent(spec: EmployeeSpec, checkpointer, store, user_id: str | 
     tool_names = [t.name for t in tools]
 
     system_prompt = spec.persona + (("\n" + spec.sop_text) if spec.sop_text else "")
+    system_prompt += _build_skill_routing(skill_summaries)
     sop_detail = spec.sop_text.strip() if spec.sop_text else "（无刚性 SOP，按技能规程执行）"
 
     backend = build_backends(spec, store, user_id)

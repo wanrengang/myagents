@@ -1,0 +1,336 @@
+<!-- 资源中心：技能/工具/知识库/SOP/连接器 的查看与 CRUD，普通用户只读 -->
+<template>
+  <div class="res-page">
+    <n-tabs v-model:value="activeTab" type="line" animated>
+      <!-- 技能 -->
+      <n-tab-pane name="skills" tab="技能">
+        <div class="res-toolbar">
+          <span class="res-title">技能（{{ catalog.skills?.length || 0 }}）</span>
+          <n-button v-if="isAdmin" size="small" type="primary" @click="openModal('skills')">+ 新建技能</n-button>
+        </div>
+        <div class="card-grid">
+          <div v-for="it in (catalog.skills || [])" :key="it.id" class="res-card tech-card">
+            <div class="card-head"><span class="card-name">{{ it.name }}</span><n-tag v-if="it.dir" size="tiny" round bordered>内置</n-tag></div>
+            <div class="card-id">{{ it.id }}</div>
+            <div class="card-desc">{{ it.description }}</div>
+            <div class="card-acts">
+              <n-button size="tiny" quaternary @click="viewSkillContent(it)">查看内容</n-button>
+              <n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('skills', it)">编辑</n-button>
+            </div>
+          </div>
+        </div>
+      </n-tab-pane>
+
+      <!-- 工具 -->
+      <n-tab-pane name="tools" tab="工具">
+        <div class="res-toolbar"><span class="res-title">工具（{{ catalog.tools?.length || 0 }}）</span></div>
+        <div class="card-grid">
+          <div v-for="it in (catalog.tools || [])" :key="it.id" class="res-card tech-card">
+            <div class="card-head"><span class="card-name">{{ it.name }}</span><n-tag v-if="it.needs_approval" type="warning" size="tiny" round bordered>需审批</n-tag></div>
+            <div class="card-id">{{ it.id }}</div>
+            <div class="card-desc">{{ it.description }}</div>
+            <div class="card-acts"><n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('tools', it)">编辑</n-button></div>
+          </div>
+        </div>
+      </n-tab-pane>
+
+      <!-- 知识库 -->
+      <n-tab-pane name="kbs" tab="知识库">
+        <div class="kb-layout">
+          <div class="kb-list-panel">
+            <div class="res-toolbar"><span class="res-title">知识库</span><n-button v-if="isAdmin" size="tiny" type="primary" @click="openModal('kbs')">+ 新建</n-button></div>
+            <div v-for="kb in (catalog.knowledge_bases || [])" :key="kb.id" class="kb-item" :class="{ active: selectedKb === kb.id }" @click="selectKb(kb.id)">
+              <div class="kb-name">{{ kb.name }}</div>
+              <div class="kb-desc">{{ kb.description }}</div>
+            </div>
+          </div>
+          <div class="kb-entries-panel">
+            <div v-if="!selectedKb" class="res-empty">选择左侧知识库查看条目</div>
+            <template v-else>
+              <div class="res-toolbar"><span class="res-title">条目（{{ kbEntries.length }}）</span><n-button v-if="isAdmin" size="tiny" type="primary" @click="openModal('kb_entries')">+ 新建条目</n-button></div>
+              <div v-for="e in kbEntries" :key="e.id" class="entry-card tech-card">
+                <div class="entry-title-row">
+                  <span class="entry-title">{{ e.title }}</span>
+                  <span class="entry-id">#{{ e.id }}</span>
+                </div>
+                <div class="entry-keywords">{{ (e.keywords || []).join('、') }}</div>
+                <div class="entry-content-preview">{{ e.content ? e.content.slice(0, 80) + (e.content.length > 80 ? '…' : '') : '' }}</div>
+                <div class="card-acts">
+                  <n-button size="tiny" quaternary @click="viewKbEntry(e)">查看详情</n-button>
+                  <n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('kb_entries', e)">编辑</n-button>
+                  <n-button v-if="isAdmin" size="tiny" quaternary type="error" @click="delItem('kb_entries', e.id)">删除</n-button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </n-tab-pane>
+
+      <!-- SOP -->
+      <n-tab-pane name="sops" tab="SOP">
+        <div class="res-toolbar"><span class="res-title">SOP 流程文档（{{ catalog.sops?.length || 0 }}）</span><n-button v-if="isAdmin" size="small" type="primary" @click="openModal('sops')">+ 新建 SOP</n-button></div>
+        <div class="card-grid">
+          <div v-for="it in (catalog.sops || [])" :key="it.id" class="res-card tech-card">
+            <div class="card-name">{{ it.name }}</div>
+            <div class="card-id">{{ it.id }}</div>
+            <div class="card-desc">{{ it.description }}</div>
+            <div v-if="it.content" class="card-content" @click.stop="toggleSopContent(it.id)">
+              <div class="content-preview" :class="{ expanded: sopExpanded[it.id] }">{{ it.content }}</div>
+              <span class="expand-btn">{{ sopExpanded[it.id] ? '收起' : '展开全文' }}</span>
+            </div>
+            <div class="card-acts"><n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('sops', it)">编辑</n-button><n-button v-if="isAdmin" size="tiny" quaternary type="error" @click="delItem('sops', it.id)">删除</n-button></div>
+          </div>
+        </div>
+      </n-tab-pane>
+
+      <!-- 连接器 -->
+      <n-tab-pane name="connectors" tab="连接器">
+        <div class="res-toolbar"><span class="res-title">连接器（{{ catalog.connectors?.length || 0 }}）</span><n-button v-if="isAdmin" size="small" type="primary" @click="openModal('connectors')">+ 新建连接器</n-button></div>
+        <div class="card-grid">
+          <div v-for="it in (catalog.connectors || [])" :key="it.id" class="res-card tech-card">
+            <div class="card-name">{{ it.name }}</div>
+            <div class="card-id">{{ it.id }}</div>
+            <div class="card-desc">{{ it.description }}</div>
+            <div class="card-acts"><n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('connectors', it)">编辑</n-button><n-button v-if="isAdmin" size="tiny" quaternary type="error" @click="delItem('connectors', it.id)">删除</n-button></div>
+          </div>
+        </div>
+      </n-tab-pane>
+    </n-tabs>
+
+    <!-- 编辑弹窗 -->
+    <n-modal v-model:show="modalShow" preset="card" :title="modalTitle" style="width:640px;max-width:92vw">
+      <n-form label-placement="left" :label-width="80" size="small">
+        <n-form-item v-if="!editing?.id" label="ID"><n-input v-model:value="modalForm.id" placeholder="唯一标识，如 my-skill" /></n-form-item>
+        <n-form-item label="名称"><n-input v-model:value="modalForm.name" placeholder="显示名称" /></n-form-item>
+        <n-form-item label="描述"><n-input v-model:value="modalForm.description" type="textarea" :rows="2" /></n-form-item>
+        <n-form-item v-if="modalType === 'skills'" label="SKILL.md 内容">
+          <n-input v-model:value="modalForm.content" type="textarea" :rows="12" placeholder="### 技能规程&#10;markdown 格式的技能正文" />
+          <template #extra>修改后需重启服务或重编译该员工才能生效（下次启动时重新播种）</template>
+        </n-form-item>
+        <n-form-item v-if="modalType === 'sops'" label="内容"><n-input v-model:value="modalForm.content" type="textarea" :rows="8" /></n-form-item>
+        <n-form-item v-if="modalType === 'connectors'" label="配置 JSON"><n-input v-model:value="modalForm.config" type="textarea" :rows="6" placeholder='{"transport":"stdio","command":"...","args":[...]}' /></n-form-item>
+        <n-form-item v-if="modalType === 'kb_entries'" label="标题"><n-input v-model:value="modalForm.title" /></n-form-item>
+        <n-form-item v-if="modalType === 'kb_entries'" label="关键词"><n-input v-model:value="modalForm.keywords" placeholder="逗号分隔" /></n-form-item>
+        <n-form-item v-if="modalType === 'kb_entries'" label="内容"><n-input v-model:value="modalForm.content" type="textarea" :rows="6" /></n-form-item>
+      </n-form>
+      <template #footer>
+        <n-space>
+          <n-button @click="modalShow = false">取消</n-button>
+          <n-button type="primary" @click="saveItem">保存</n-button>
+        </n-space>
+      </template>
+    </n-modal>
+
+    <!-- 查看技能详情弹窗 -->
+    <n-modal v-model:show="viewSkillModalShow" preset="card" title="技能内容" style="width:720px;max-width:92vw">
+      <div class="skill-detail">
+        <div class="skill-detail-name">{{ viewSkill?.name }}</div>
+        <div class="skill-detail-id">ID: {{ viewSkill?.id }}</div>
+        <div class="skill-detail-desc">{{ viewSkill?.description }}</div>
+        <div class="skill-detail-label">SKILL.md 内容</div>
+        <pre class="skill-detail-content">{{ skillContent || '（暂无内容，技能文件可能不存在）' }}</pre>
+      </div>
+      <template #footer>
+        <n-space>
+          <n-button @click="viewSkillModalShow = false">关闭</n-button>
+          <n-button v-if="isAdmin" type="primary" @click="openModal('skills', viewSkill); viewSkillModalShow = false">编辑</n-button>
+        </n-space>
+      </template>
+    </n-modal>
+
+    <!-- 查看知识库条目详情弹窗 -->
+    <n-modal v-model:show="viewModalShow" preset="card" :title="viewEntry?.title || '条目详情'" style="width:640px;max-width:92vw">
+      <div class="kb-detail">
+        <div class="kb-detail-id">编号：{{ viewEntry?.id }}</div>
+        <div class="kb-detail-keywords" v-if="viewEntry?.keywords?.length">
+          关键词：<span v-for="kw in viewEntry.keywords" :key="kw" class="kb-detail-tag">{{ kw }}</span>
+        </div>
+        <div class="kb-detail-content">{{ viewEntry?.content }}</div>
+      </div>
+      <template #footer>
+        <n-space>
+          <n-button @click="viewModalShow = false">关闭</n-button>
+          <n-button v-if="isAdmin" type="primary" @click="openModal('kb_entries', viewEntry); viewModalShow = false">编辑</n-button>
+        </n-space>
+      </template>
+    </n-modal>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useMessage, useDialog } from 'naive-ui'
+import { useAuthStore } from '../stores/auth.js'
+import api from '../api.js'
+
+defineOptions({ name: 'ResourcesView' })
+
+const message = useMessage()
+const dialog = useDialog()
+const auth = useAuthStore()
+const isAdmin = computed(() => auth.isAdmin)
+
+const catalog = ref({})
+const activeTab = ref('skills')
+const selectedKb = ref(null)
+const kbEntries = ref([])
+const sopExpanded = reactive({})
+
+const modalShow = ref(false)
+const viewModalShow = ref(false)
+const viewSkillModalShow = ref(false)
+const modalType = ref('')
+const editing = ref(null)
+const viewEntry = ref(null)
+const viewSkill = ref(null)
+const skillContent = ref('')
+const modalForm = reactive({ id: '', name: '', description: '', content: '', config: '', title: '', keywords: '' })
+
+const modalTitleMap = {
+  skills: '技能', tools: '工具', sops: 'SOP', connectors: '连接器', kbs: '知识库', kb_entries: '知识库条目',
+}
+const modalTitle = ref('')
+
+function toggleSopContent(id) { sopExpanded[id] = !sopExpanded[id] }
+
+function viewKbEntry(entry) {
+  viewEntry.value = entry
+  viewModalShow.value = true
+}
+
+async function viewSkillContent(skill) {
+  viewSkill.value = skill
+  skillContent.value = ''
+  try {
+    const { data } = await api.get(`/admin/skills/${skill.id}/content`)
+    skillContent.value = data.content || '（技能文件无内容）'
+  } catch {
+    skillContent.value = '（无法读取技能内容）'
+  }
+  viewSkillModalShow.value = true
+}
+
+async function loadCatalog() {
+  try {
+    const { data } = await api.get(isAdmin.value ? '/admin/catalog' : '/catalog')
+    catalog.value = data
+    if (data.knowledge_bases?.length && !selectedKb.value) selectKb(data.knowledge_bases[0].id)
+  } catch {}
+}
+
+async function selectKb(kbId) {
+  selectedKb.value = kbId
+  try {
+    const { data } = await api.get(isAdmin.value ? `/admin/knowledge-bases/${kbId}/entries` : `/knowledge-bases/${kbId}/entries`)
+    kbEntries.value = data || []
+  } catch {}
+}
+
+function openModal(type, item = null) {
+  modalType.value = type
+  editing.value = item
+  modalTitle.value = (item ? '编辑' : '新建') + modalTitleMap[type]
+  Object.keys(modalForm).forEach(k => modalForm[k] = '')
+  if (item) {
+    modalForm.id = item.id || ''
+    modalForm.name = item.name || ''
+    modalForm.description = item.description || ''
+    modalForm.content = item.content || ''
+    modalForm.config = typeof item.config === 'string' ? item.config : JSON.stringify(item.config, null, 2)
+    modalForm.title = item.title || ''
+    modalForm.keywords = Array.isArray(item.keywords) ? item.keywords.join(', ') : (item.keywords || '')
+  }
+  modalShow.value = true
+}
+
+async function saveItem() {
+  const type = modalType.value
+  const isEdit = !!editing.value
+  const base = type === 'kb_entries' ? `/admin/knowledge-bases/${selectedKb.value}/entries` : `/admin/${type}`
+  const payload = { ...modalForm }
+  if (type === 'kb_entries' && payload.keywords) payload.keywords = payload.keywords.split(/[,，]/).map(s => s.trim()).filter(Boolean)
+  if (type === 'connectors' && payload.config) { try { payload.config = JSON.parse(payload.config) } catch { message.error('配置 JSON 格式错误'); return } }
+  try {
+    if (isEdit) {
+      await api.put(`${base}/${editing.value.id}`, payload)
+    } else {
+      await api.post(base, payload)
+    }
+    message.success(isEdit ? '已更新' : '已创建')
+    modalShow.value = false
+    await loadCatalog()
+    if (type === 'kb_entries') await selectKb(selectedKb.value)
+  } catch (e) { message.error('保存失败：' + (e.response?.data?.error || e.message)) }
+}
+
+function delItem(type, id) {
+  dialog.warning({
+    title: '删除', content: '确认删除？该操作不可恢复。',
+    positiveText: '删除', negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        const base = type === 'kb_entries' ? `/admin/knowledge-bases/${selectedKb.value}/entries` : `/admin/${type}`
+        await api.delete(`${base}/${id}`)
+        message.success('已删除')
+        await loadCatalog()
+        if (type === 'kb_entries') await selectKb(selectedKb.value)
+      } catch (e) { message.error('删除失败：' + e.message) }
+    },
+  })
+}
+
+onMounted(loadCatalog)
+</script>
+
+<style scoped>
+.res-page { padding: 24px; height: 100%; overflow-y: auto; }
+.res-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.res-title { font-size: 15px; font-weight: 600; color: #0f172a; flex: 1; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.res-card { padding: 14px; }
+.card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.card-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+.card-id { font-size: 11px; color: #94a3b8; }
+.card-desc { font-size: 13px; color: #64748b; margin-top: 6px; line-height: 1.55; }
+.card-content { margin-top: 8px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+.content-preview { font-size: 12px; color: #475569; line-height: 1.7; white-space: pre-wrap; max-height: 60px; overflow: hidden; transition: max-height 0.25s ease; }
+.content-preview.expanded { max-height: 2000px; }
+.expand-btn { font-size: 11px; color: #3b82f6; cursor: pointer; margin-top: 4px; display: inline-block; }
+.expand-btn:hover { text-decoration: underline; }
+.card-acts { margin-top: 10px; display: flex; gap: 6px; }
+
+/* 知识库条目卡片 */
+.entry-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.entry-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+.entry-id { font-size: 11px; color: #94a3b8; }
+.entry-content-preview { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5; }
+
+/* 知识库条目详情弹窗 */
+.kb-detail { padding: 4px 0; }
+.kb-detail-id { font-size: 12px; color: #94a3b8; margin-bottom: 12px; }
+.kb-detail-keywords { font-size: 12px; color: #475569; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.kb-detail-tag { display: inline-block; background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.kb-detail-content { font-size: 14px; color: #0f172a; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+
+/* 技能详情弹窗 */
+.skill-detail { padding: 4px 0; }
+.skill-detail-name { font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.skill-detail-id { font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
+.skill-detail-desc { font-size: 13px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+.skill-detail-label { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+.skill-detail-content { font-size: 13px; color: #0f172a; line-height: 1.7; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; white-space: pre-wrap; word-break: break-word; max-height: 480px; overflow: auto; }
+
+.kb-layout { display: flex; gap: 16px; }
+.kb-list-panel { width: 240px; flex-shrink: 0; }
+.kb-entries-panel { flex: 1; min-width: 0; }
+.kb-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 6px; border: 1px solid transparent; transition: background 0.15s; background: #fff; }
+.kb-item:hover { background: #f1f5f9; }
+.kb-item.active { background: #eff6ff; border-color: #3b82f6; }
+.kb-name { font-size: 13px; font-weight: 500; color: #0f172a; }
+.kb-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+.entry-card { padding: 12px; margin-bottom: 8px; }
+.entry-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+.entry-keywords { font-size: 11px; color: #3b82f6; margin: 3px 0; }
+.entry-content { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-wrap; max-height: 120px; overflow: auto; }
+.res-empty { padding: 40px; text-align: center; color: #94a3b8; font-size: 13px; }
+</style>

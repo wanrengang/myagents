@@ -34,6 +34,13 @@ MOCK_ORDERS = {
     "O12345": {"product": "X1 智能音箱", "amount": 399.0, "status": "已签收", "days_since_sign": 3},
     "O12346": {"product": "S2 智能台灯", "amount": 199.0, "status": "已签收", "days_since_sign": 10},
     "O12347": {"product": "X1 智能音箱", "amount": 399.0, "status": "运输中", "days_since_sign": 0},
+    "O12348": {"product": "W5 智能手表（硅胶版）", "amount": 599.0, "status": "已签收", "days_since_sign": 1},
+    "O12349": {"product": "H7 降噪耳机", "amount": 499.0, "status": "已签收", "days_since_sign": 5},
+    "O12350": {"product": "P3 智能投影仪", "amount": 2999.0, "status": "运输中", "days_since_sign": 0},
+    "O12351": {"product": "S2 Pro 双灯头台灯", "amount": 299.0, "status": "已签收", "days_since_sign": 20},
+    "O12352": {"product": "X1 智能音箱（白色）", "amount": 399.0, "status": "已签收", "days_since_sign": 60},
+    "O12353": {"product": "H7 Pro 降噪耳机", "amount": 699.0, "status": "已签收", "days_since_sign": 2},
+    "O12354": {"product": "W5 Pro eSIM 手表", "amount": 899.0, "status": "已签收", "days_since_sign": 14},
 }
 
 
@@ -110,11 +117,6 @@ def route_after_validate(state: RefundState) -> str:
     return "calc_refund" if "order" in state else END
 
 
-def route_after_approval(state: RefundState) -> str:
-    approved = bool(state.get("approval", {}).get("approved"))
-    return "execute_refund" if approved else END
-
-
 def _build():
     """构建 StateGraph（不含 checkpointer）。"""
     g = StateGraph(RefundState)
@@ -125,7 +127,8 @@ def _build():
     g.add_edge(START, "validate_order")
     g.add_conditional_edges("validate_order", route_after_validate)
     g.add_edge("calc_refund", "await_approval")
-    g.add_conditional_edges("await_approval", route_after_approval)
+    # 无论批准/拒绝都走 execute_refund（它内部按 approval 标记分流出两种 summary）
+    g.add_edge("await_approval", "execute_refund")
     g.add_edge("execute_refund", END)
     return g
 
@@ -143,36 +146,54 @@ def get_refund_graph(checkpointer) :
 
 
 def make_start_refund(checkpointer):
-    """工厂：返回 start_refund 工具。checkpointer 为运行时 checkpointer（暂未使用）。
+    """工厂：返回 start_refund 工具，把退款流程跑在派生的内层 thread 上。
 
-    当前（暂不启用内层审批）：工具内部顺序调用纯函数 validate_order → calc_refund
-    → execute_refund，不经过 LangGraph 图、不产生内层 interrupt。审批仍由外层
-    agent 的 interrupt_on（catalog tools.start_refund.needs_approval）拦截，
-    走老审批流（_stream_run 捕获 __interrupt__ → 建单 → decision 端点 resume）。
+    Point2 内化审批：工具首次调用跑 refund StateGraph（validate_order → calc_refund
+    → await_approval(interrupt) → execute_refund），在 await_approval 处 interrupt()
+    挂起，向上冒泡为外层 agent 的 __interrupt__（见 app.main._stream_run），由审批
+    中心建单（存 inner_thread）→ 审批人决策后，decision 端点调 resume_refund 恢复
+    内层图拿到 summary，再用 Command(resume=summary) 恢复外层 agent。
 
-    设计储备（Point2，待接线）：get_refund_graph(checkpointer) 已实现含
-    await_approval(interrupt) 节点的完整 StateGraph。启用步骤：
-      1. catalog UPDATE tools SET needs_approval=NULL WHERE id='start_refund'
-         （撤外层 gate）；
-      2. main.py _stream_run 识别内层 __interrupt__ 新格式 payload
-         （含 inner_thread），建单时存 inner_thread；
-      3. decision 端点先 Command(resume=...) 恢复内层图拿 summary，
-         再 Command(resume=summary) 恢复外层 agent。
+    - 内层 thread 由 (order_id, reason) 确定性派生，保证 resume 时定位到同一次运行。
+    - 外层 interrupt_on 已撤（catalog _migrate_remove_refund_gate），不会双重拦截。
     """
     from langchain.tools import tool
 
+    graph = get_refund_graph(checkpointer)
+
     @tool
     async def start_refund(order_id: str, reason: str) -> str:
-        """发起退款流程（含人工审批）。固定流程：校验订单 → 计算金额 → 审批 → 生成退款单。"""
-        # 当前：顺序调用纯函数（审批由外层 interrupt_on 完成），不跑图、不产生内层 interrupt。
-        # Point2 接线后改为跑 get_refund_graph(checkpointer) 的完整图（含 await_approval 节点）。
-        state: dict = {"order_id": order_id, "reason": reason}
-        state.update(validate_order(state))
-        if "summary" in state:
-            return state["summary"]
-        state.update(calc_refund(state))
-        state.update({"approval": {"approved": True}})
-        state.update(execute_refund(state))
-        return state.get("summary", "流程异常终止")
+        """发起退款流程（含人工审批节点）。固定流程：校验订单 → 计算金额 → 审批 → 生成退款单。"""
+        inner = f"refund:{order_id}:{abs(hash(reason))}"
+        await graph.ainvoke(
+            {"order_id": order_id, "reason": reason, "inner_thread": inner},
+            config={"configurable": {"thread_id": inner}},
+        )
+        st = graph.get_state({"configurable": {"thread_id": inner}})
+        # 若挂起在审批节点，重抛 interrupt() 让其冒泡到外层 agent 的 __interrupt__
+        if st.next and "await_approval" in st.next:
+            payload = (
+                st.tasks[0].interrupts[0].value
+                if (st.tasks and st.tasks[0].interrupts)
+                else {"type": "refund_approval", "inner_thread": inner}
+            )
+            from langgraph.types import interrupt as _interrupt
+            _interrupt(payload)
+        return st.values.get("summary", "流程异常终止")
 
     return start_refund
+
+
+async def resume_refund(inner_thread: str, approved: bool, checkpointer) -> str:
+    """恢复挂起的退款内层图，返回最终 summary。
+
+    decision 端点调用：先用本函数恢复内层图（执行 execute_refund 或终止），
+    再用返回的 summary 作为 Command(resume=summary) 恢复外层 agent 的工具调用结果。
+    """
+    graph = get_refund_graph(checkpointer)
+    await graph.ainvoke(
+        Command(resume={"approved": approved}),
+        config={"configurable": {"thread_id": inner_thread}},
+    )
+    st = graph.get_state({"configurable": {"thread_id": inner_thread}})
+    return st.values.get("summary", "流程异常终止")

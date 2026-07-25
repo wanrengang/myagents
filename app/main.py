@@ -450,6 +450,12 @@ async def public_catalog(user: dict = Depends(auth.get_current_user)):
     c.pop("connectors", None)
     return c
 
+
+@app.get("/api/knowledge-bases/{kb_id}/entries")
+async def public_kb_entries(kb_id: str, user: dict = Depends(auth.get_current_user)):
+    """登录用户可读的知识库条目列表（只读，不含编辑接口）。"""
+    return catalog.list_kb_entries(kb_id)
+
 @app.post("/api/employees/{emp_id}/conversations")
 async def new_conversation(emp_id: str, user: dict = Depends(auth.get_current_user_or_fallback)):
     """用某员工开新会话，返回 conversation_id 并登记 conv→emp 映射。
@@ -1010,55 +1016,11 @@ async def debug_memory(employee_id: str = "xiaosu",
 
 @app.get("/")
 async def index():
-    return FileResponse(ROOT / "app" / "static" / "home.html")
+    return FileResponse(ROOT / "frontend" / "index.html")
 
 
-@app.get("/login.html")
-async def login_page():
-    return FileResponse(ROOT / "app" / "static" / "login.html")
-
-
-@app.get("/change-password.html")
-async def change_password_page():
-    return FileResponse(ROOT / "app" / "static" / "change-password.html")
-
-
-@app.get("/users.html")
-async def users_page():
-    return FileResponse(ROOT / "app" / "static" / "users.html")
-
-
-@app.get("/chat.html")
-async def chat_page():
-    return FileResponse(ROOT / "app" / "static" / "index.html")
-
-
-@app.get("/admin.html")
-async def admin_page():
-    return FileResponse(ROOT / "app" / "static" / "admin.html")
-
-
-@app.get("/skills.html")
-async def skills_page():
-    return FileResponse(ROOT / "app" / "static" / "skills.html")
-
-
-@app.get("/resources.html")
-async def resources_page():
-    return FileResponse(ROOT / "app" / "static" / "resources.html")
-
-
-@app.get("/history.html")
-async def history_page():
-    return FileResponse(ROOT / "app" / "static" / "history.html")
-
-
-@app.get("/trace.html")
-async def trace_page():
-    return FileResponse(ROOT / "app" / "static" / "trace.html")
-
-# 静态资源（marked.min.js 等），本地托管不依赖外网 CDN
-app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
+app.mount("/src", StaticFiles(directory=str(ROOT / "frontend" / "src")), name="src")
+app.mount("/node_modules", StaticFiles(directory=str(ROOT / "frontend" / "node_modules")), name="node_modules")
 
 # 数据分析师生成的可视化看板按用户隔离：workspace/data/{user_id}/xxx.html
 # 访问走鉴权接口 /api/dashboards/{user_id}/{filename}，校验属主（非本人 403）
