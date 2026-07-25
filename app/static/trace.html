@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>执行过程</title>
+<script src="/static/common.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f5f5f4; color: #1c1c1a; min-height: 100vh; }
+  header { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e6e4de; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header .sub { font-size: 12px; color: #888; }
+  header .nav { margin-left: auto; display: flex; gap: 6px; }
+  header .nav a { font-size: 13px; padding: 5px 12px; border: 1px solid #d3d1c7; background: #fff; border-radius: 7px; color: #444; text-decoration: none; }
+  .wrap { display: flex; gap: 16px; padding: 16px 20px; align-items: flex-start; }
+  .runs { width: 320px; flex-shrink: 0; }
+  .runcard { background: #fff; border: 1px solid #e6e4de; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; }
+  .runcard:hover { border-color: #185FA5; }
+  .runcard.on { border-color: #185FA5; box-shadow: 0 0 0 2px rgba(24,95,165,.12); }
+  .runcard .q { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .runcard .meta { margin-top: 6px; font-size: 11px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; }
+  .b-done { background: #e5f3ec; color: #0F6E56; }
+  .b-error { background: #fdecea; color: #c0392b; }
+  .b-interrupted { background: #fdf3e0; color: #b26a00; }
+  .b-running { background: #e8f0fa; color: #185FA5; }
+  .detail { flex: 1; min-width: 0; }
+  .summary { background: #fff; border: 1px solid #e6e4de; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; display: flex; gap: 26px; flex-wrap: wrap; }
+  .summary .kv b { font-size: 16px; display: block; }
+  .summary .kv span { font-size: 11px; color: #888; }
+  .ev { background: #fff; border: 1px solid #e6e4de; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+  .ev-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; font-size: 13px; }
+  .ev-head:hover { background: #fcfbf8; }
+  .ev-head .ico { width: 22px; text-align: center; }
+  .ev-head .nm { font-weight: 500; }
+  .ev-head .tm { margin-left: auto; font-size: 11px; color: #999; white-space: nowrap; }
+  .ev-body { display: none; border-top: 1px solid #f0eee8; padding: 12px 14px; }
+  .ev.open .ev-body { display: block; }
+  .ev-body h4 { font-size: 11px; color: #888; margin: 8px 0 4px; font-weight: 600; }
+  .ev-body pre { background: #faf9f6; border: 1px solid #f0eee8; border-radius: 7px; padding: 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+  .e-llm .ico { color: #185FA5; } .e-tool .ico { color: #0F6E56; }
+  .empty { padding: 50px; text-align: center; color: #aaa; font-size: 13px; background: #fff; border-radius: 10px; }
+  .err-line { color: #c0392b; font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>执行过程</h1>
+  <span class="sub" id="convTitle"></span>
+  <div id="userbar" style="margin-left:auto;"></div>
+  <div class="nav">
+    <a href="/">🏠 主页</a>
+    <a id="backChat" href="/chat.html">💬 返回对话</a>
+    <a href="/history.html">🕘 历史对话</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="runs" id="runs"></div>
+  <div class="detail" id="detail"><div class="empty">选择左侧一次运行，查看执行时间线</div></div>
+</div>
+
+<script>
+const CONV = new URLSearchParams(location.search).get("conv") || "";
+const STATUS_TXT = {done:"完成", error:"出错", interrupted:"等待审批", running:"运行中"};
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function ms(v){ if(v==null) return "-"; return v>=1000 ? (v/1000).toFixed(1)+"s" : v+"ms"; }
+
+async function loadRuns(){
+  if(!CONV){ document.getElementById("runs").innerHTML = '<div class="empty">缺少会话参数 ?conv=</div>'; return; }
+  document.getElementById("backChat").href = "/chat.html?conv=" + encodeURIComponent(CONV);
+  const d = await fetch(`/api/conversations/${encodeURIComponent(CONV)}/traces`).then(r=>r.json());
+  if(d.error){ document.getElementById("runs").innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
+  document.getElementById("convTitle").textContent = (d.title||CONV) + (d.employee_id ? ` · ${d.employee_id}` : "");
+  const runs = d.runs || [];
+  if(!runs.length){ document.getElementById("runs").innerHTML = '<div class="empty">该会话暂无执行记录<br><br>（trace 功能上线后的新消息才会被记录）</div>'; return; }
+  document.getElementById("runs").innerHTML = runs.map(r=>`
+    <div class="runcard" id="rc-${esc(r.run_id)}" onclick="loadDetail('${esc(r.run_id)}')">
+      <div class="q">${esc(r.input_preview || (r.kind==="resume"?"（审批恢复执行）":"（无输入预览）"))}</div>
+      <div class="meta">
+        <span class="badge b-${esc(r.status)}">${STATUS_TXT[r.status]||esc(r.status)}</span>
+        <span>🧠 ${r.llm_calls||0}</span><span>🔧 ${r.tool_calls||0}</span>
+        <span>⏱ ${ms(r.duration_ms)}</span><span>${esc((r.started_at||"").slice(5,16))}</span>
+      </div>
+    </div>`).join("");
+  loadDetail(runs[0].run_id);
+}
+
+async function loadDetail(runId){
+  document.querySelectorAll(".runcard").forEach(c=>c.classList.remove("on"));
+  const card = document.getElementById("rc-"+runId); if(card) card.classList.add("on");
+  const r = await fetch(`/api/traces/${encodeURIComponent(runId)}`).then(x=>x.json());
+  if(r.error){ document.getElementById("detail").innerHTML = `<div class="empty">${esc(r.error)}</div>`; return; }
+  const evs = r.events || [];
+  let html = `<div class="summary">
+      <div class="kv"><b>${STATUS_TXT[r.status]||esc(r.status)}</b><span>状态</span></div>
+      <div class="kv"><b>${ms(r.duration_ms)}</b><span>总耗时</span></div>
+      <div class="kv"><b>${r.llm_calls||0}</b><span>模型调用</span></div>
+      <div class="kv"><b>${r.tool_calls||0}</b><span>工具调用</span></div>
+      <div class="kv"><b>${r.total_tokens||0}</b><span>tokens</span></div>
+      ${r.error?`<div class="err-line">❌ ${esc(r.error)}</div>`:""}
+    </div>`;
+  if(!evs.length){ html += '<div class="empty">本次运行没有捕获到事件</div>'; }
+  html += evs.map(e=>`
+    <div class="ev e-${esc(e.etype)}" onclick="this.classList.toggle('open')">
+      <div class="ev-head">
+        <span class="ico">${e.etype==="llm"?"🧠":"🔧"}</span>
+        <span class="nm">${esc(e.name)}</span>
+        <span class="badge b-${e.status==="ok"?"done":(e.status==="error"?"error":"running")}">${e.status==="ok"?"成功":(e.status==="error"?"失败":"未完成")}</span>
+        ${e.tokens?`<span style="font-size:11px;color:#999;">${e.tokens} tok</span>`:""}
+        <span class="tm">${ms(e.duration_ms)} · ${esc((e.started_at||"").slice(11))}</span>
+      </div>
+      <div class="ev-body" onclick="event.stopPropagation()">
+        <h4>输入</h4><pre>${esc(e.input||"（空）")}</pre>
+        <h4>输出</h4><pre>${esc(e.output||"（空）")}</pre>
+      </div>
+    </div>`).join("");
+  document.getElementById("detail").innerHTML = html;
+}
+
+(async function init(){
+  if (!requireAuth()) return;
+  mountUserBar("userbar");
+  window.fetch = authFetch;
+  await loadRuns();
+})();
+</script>
+</body>
+</html>

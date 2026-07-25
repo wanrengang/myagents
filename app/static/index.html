@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>数字员工 Demo</title>
+<script src="/static/marked.min.js"></script>
+<script src="/static/common.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f5f5f4; color: #1c1c1a; height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 10px 20px; background: #fff; border-bottom: 1px solid #e6e4de; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 15px; font-weight: 500; }
+  header .meta { font-size: 12px; color: #888; }
+  #empselect { font-size: 13px; padding: 5px 10px; border: 1px solid #d3d1c7; border-radius: 8px; background: #fff; cursor: pointer; }
+  header button { margin-left: auto; font-size: 12px; padding: 4px 12px; border: 1px solid #d3d1c7; background: #fff; border-radius: 6px; cursor: pointer; }
+  #body { flex: 1; display: flex; min-height: 0; }
+  /* 左一栏：历史对话 */
+  #history { width: 236px; background: #fff; border-right: 1px solid #e6e4de; display: flex; flex-direction: column; min-height: 0; }
+  .hist-head { padding: 12px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; }
+  .hist-head h2 { font-size: 13px; font-weight: 500; color: #444; flex: 1; }
+  .hist-head button { font-size: 12px; padding: 4px 10px; border: 1px solid #d3d1c7; background: #fff; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  #convlist { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .conv { padding: 8px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; background: #faf9f6; }
+  .conv:hover { background: #f0eee8; }
+  .conv.active { background: #E6F1FB; border-color: #185FA5; }
+  .conv .ct { font-size: 13px; color: #1c1c1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv .cs { font-size: 11px; color: #999; margin-top: 3px; display: flex; gap: 6px; }
+  .conv .emp-tag { color: #185FA5; }
+  .empty { font-size: 12px; color: #aaa; padding: 16px 8px; text-align: center; line-height: 1.7; }
+  /* 左二栏：七段流水线 */
+  #pipeline { width: 260px; background: #fff; border-right: 1px solid #e6e4de; padding: 16px; overflow-y: auto; }
+  #pipeline h2 { font-size: 13px; font-weight: 500; margin-bottom: 12px; color: #444; }
+  .stage { display: flex; gap: 10px; padding: 8px 0; opacity: .45; }
+  .stage.active { opacity: 1; }
+  .stage.done { opacity: 1; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #c7c5bd; flex-shrink: 0; margin-top: 1px; position: relative; }
+  .stage.active .dot { border-color: #185FA5; background: #E6F1FB; }
+  .stage.done .dot { border-color: #0F6E56; background: #0F6E56; }
+  .stage.done .dot::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .stage .name { font-size: 13px; font-weight: 500; }
+  .stage .detail { font-size: 11px; color: #777; margin-top: 2px; line-height: 1.5; white-space: pre-wrap; }
+  .connector { width: 2px; height: 14px; background: #e0ded6; margin-left: 8px; }
+  /* 右栏：对话 */
+  #chat { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  /* 用户气泡 */
+  .msg { max-width: 78%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.7; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: #185FA5; color: #fff; }
+  .msg.bot { align-self: flex-start; background: #fff; border: 1px solid #e6e4de; }
+  /* 回复内 markdown 排版 */
+  .msg.bot > .md > *:first-child { margin-top: 0; }
+  .msg.bot > .md > *:last-child { margin-bottom: 0; }
+  .md { line-height: 1.75; }
+  .md h1,.md h2,.md h3 { line-height: 1.3; margin: 14px 0 8px; font-weight: 600; }
+  .md h1 { font-size: 19px; } .md h2 { font-size: 17px; } .md h3 { font-size: 15px; }
+  .md p { margin: 8px 0; }
+  .md ul,.md ol { margin: 8px 0; padding-left: 22px; }
+  .md li { margin: 4px 0; }
+  .md a { color: #185FA5; }
+  .md code { background: #f0eee8; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .md pre { background: #1f2330; color: #e6e6e6; padding: 12px 14px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
+  .md pre code { background: none; padding: 0; color: inherit; font-size: 12.5px; }
+  .md blockquote { border-left: 3px solid #d3d1c7; margin: 8px 0; padding: 2px 12px; color: #666; }
+  .md table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+  .md th,.md td { border: 1px solid #e0ded6; padding: 5px 10px; text-align: left; }
+  .md th { background: #f7f6f2; }
+  .md strong { font-weight: 600; }
+  /* 思考 + 工具调用：可折叠 Trace，置于回复上方 */
+  .trace { align-self: stretch; background: #faf9f6; border: 1px solid #e6e4de; border-radius: 10px; overflow: hidden; }
+  .trace > summary { cursor: pointer; padding: 8px 14px; font-size: 12.5px; color: #666; list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+  .trace > summary::-webkit-details-marker { display: none; }
+  .trace > summary::before { content: "▸"; font-size: 10px; transition: transform .15s; color: #999; }
+  .trace.open > summary::before { transform: rotate(90deg); }
+  .trace > summary .badge { background: #ecebe5; border-radius: 10px; padding: 1px 8px; font-size: 11px; color: #555; }
+  .trace .body { padding: 4px 14px 12px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #eee; }
+  .think { font-size: 12.5px; color: #6b6b6b; background: #f3f2ec; border-left: 3px solid #cfcdc3; border-radius: 0 6px 6px 0; padding: 8px 12px; line-height: 1.65; white-space: pre-wrap; }
+  .think .lbl { display: block; font-size: 11px; color: #9a978a; margin-bottom: 3px; font-weight: 600; letter-spacing: .3px; }
+  .tool { font-size: 12.5px; color: #555; background: #EEEDFE; border: 1px solid #CECBF6; padding: 7px 12px; border-radius: 8px; line-height: 1.55; }
+  .tool b { color: #3C3489; }
+  .tool pre { margin: 5px 0 0; background: #f7f6fc; border-radius: 6px; padding: 6px 9px; font-size: 11.5px; color: #444; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto; }
+  .approval { align-self: stretch; background: #FAEEDA; border: 1px solid #EF9F27; border-radius: 10px; padding: 12px 16px; font-size: 13px; }
+  .approval .btns { margin-top: 8px; display: flex; gap: 8px; }
+  .approval button { padding: 5px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; }
+  .approval .ok { background: #0F6E56; color: #fff; }
+  .approval .no { background: #A32D2D; color: #fff; }
+  .approval .resolved { color: #633806; font-weight: 500; }
+  #inputbar { padding: 14px 20px; background: #fff; border-top: 1px solid #e6e4de; display: flex; gap: 10px; }
+  #input { flex: 1; border: 1px solid #d3d1c7; border-radius: 8px; padding: 10px 12px; font-size: 14px; outline: none; }
+  #send { padding: 0 22px; background: #185FA5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  #send:disabled { background: #9db8d2; }
+  .hint { font-size: 11px; color: #999; padding: 4px 20px 8px; background: #fff; white-space: pre-line; }
+</style>
+</head>
+<body>
+<header>
+  <h1>数字员工 Demo</h1>
+  <select id="empselect" onchange="selectEmployee(this.value)"></select>
+  <span class="meta" id="empmeta">员工加载中…</span>
+  <button id="tuneBtn" style="display:none" onclick="openMyTuning()">我的调整</button>
+  <button onclick="newConv()">新会话</button>
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+    <div id="userbar"></div>
+    <a href="/" style="font-size:12px;padding:4px 12px;border:1px solid #d3d1c7;background:#fff;border-radius:6px;color:#444;text-decoration:none;">🏠 主页</a>
+    <a href="/admin.html" style="font-size:12px;padding:4px 12px;border:1px solid #d3d1c7;background:#fff;border-radius:6px;color:#185FA5;text-decoration:none;">👥 员工管理</a>
+    <a href="/resources.html" style="font-size:12px;padding:4px 12px;border:1px solid #d3d1c7;background:#fff;border-radius:6px;color:#7a4ea8;text-decoration:none;">📚 资源中心</a>
+    <a href="/history.html" style="font-size:12px;padding:4px 12px;border:1px solid #d3d1c7;background:#fff;border-radius:6px;color:#0F6E56;text-decoration:none;">🕘 历史</a>
+    <a id="traceLink" href="#" onclick="return openTrace()" style="font-size:12px;padding:4px 12px;border:1px solid #d3d1c7;background:#fff;border-radius:6px;color:#b26a00;text-decoration:none;">🔎 执行过程</a>
+  </div>
+</header>
+<div id="body">
+  <div id="history">
+    <div class="hist-head">
+      <h2>历史对话</h2>
+      <a href="/history.html" style="font-size:11px;color:#185FA5;text-decoration:none;">全部 →</a>
+      <button onclick="newConv()">+ 新对话</button>
+    </div>
+    <div id="convlist"></div>
+  </div>
+  <div id="pipeline">
+    <h2>执行流水线</h2>
+    <div id="stages"></div>
+  </div>
+  <div id="chat">
+    <div id="msgs"></div>
+    <div class="hint" id="hint"></div>
+    <div id="inputbar">
+      <input id="input" placeholder="输入消息，回车发送" autofocus>
+      <button id="send" onclick="send()">发送</button>
+    </div>
+  </div>
+</div>
+<div id="tuneModal" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:40;">
+  <div style="background:#fff;border-radius:12px;padding:20px 22px;width:560px;max-height:84vh;overflow:auto;">
+    <h3 style="font-size:15px;margin-bottom:4px;">我的调整 · <span id="tuneEmpName"></span></h3>
+    <p style="font-size:11px;color:#999;margin-bottom:12px;">在系统模板基础上附加或移除技能/工具/SOP/知识库，仅作用你自己，不改全局。（基础项取消勾选即移除）</p>
+    <div id="tuneBody"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;">
+      <button id="tuneCancel" style="font-size:13px;padding:7px 16px;border-radius:7px;cursor:pointer;border:1px solid #d3d1c7;background:#fff;">取消</button>
+      <button id="tuneSave" style="font-size:13px;padding:7px 16px;border-radius:7px;cursor:pointer;border:1px solid #185FA5;background:#185FA5;color:#fff;">保存</button>
+    </div>
+  </div>
+</div>
+<script>
+const STAGES = [
+  ["input", "用户输入"], ["employee", "Employee 加载"], ["sop", "加载 SOP"],
+  ["skills", "加载 Skills"], ["planning", "DeepAgents 规划"], ["skill", "调用 Skill"],
+  ["report", "输出回复"],
+];
+const HINTS = {
+  "xiaosu": "试试：\n① X1音箱续航多久\n② 查订单O12345\n③ 音箱坏了我要投诉\n④ O12345我要退款\n⑤ 记住我姓张，回复要简短",
+  "xiaoshu": "试试：\n① 哪个地区销售额最高\n② 按月统计X1音箱销售趋势\n③ 华南和华北谁的单均金额更高",
+};
+let convId = null;
+let currentEmp = null;
+let currentConvId = null;
+let emps = [];
+let EMP_NAMES = {};
+const $msgs = document.getElementById("msgs"), $input = document.getElementById("input"), $send = document.getElementById("send");
+
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+
+function openTrace() {
+  const cid = currentConvId || convId;
+  if (!cid) { alert("请先打开或开始一个会话"); return false; }
+  location.href = "/trace.html?conv=" + encodeURIComponent(cid);
+  return false;
+}
+
+/* ---------- 七段流水线 ---------- */
+function renderStages(states) {
+  document.getElementById("stages").innerHTML = STAGES.map(([id, name], i) => {
+    const st = states[id] || "pending";
+    const d = (states[id + "_detail"] || "").replace(/</g, "&lt;");
+    return (i ? '<div class="connector"></div>' : "") +
+      `<div class="stage ${st}"><div class="dot"></div><div><div class="name">${i + 1}. ${name}</div><div class="detail">${d}</div></div></div>`;
+  }).join("");
+}
+let stageStates = {};
+function setStage(id, status, detail) {
+  stageStates[id] = status;
+  if (detail !== undefined) stageStates[id + "_detail"] = detail;
+  renderStages(stageStates);
+}
+function resetPipeline() {
+  stageStates = {};
+  setStage("input", "done", new Date().toLocaleTimeString());
+}
+
+/* ---------- 消息与 Trace 容器 ---------- */
+function addMsg(cls, text) {
+  const el = document.createElement("div");
+  el.className = cls;
+  if (text !== undefined) el.textContent = text;
+  $msgs.appendChild(el); $msgs.scrollTop = $msgs.scrollHeight;
+  return el;
+}
+function newTrace() {
+  const d = document.createElement("details");
+  d.className = "trace open";
+  d.innerHTML = '<summary><span class="badge">思考 / 工具</span><span class="tcount"></span></summary><div class="body"></div>';
+  $msgs.appendChild(d); $msgs.scrollTop = $msgs.scrollHeight;
+  return d;
+}
+function traceCount(d, n) {
+  const c = d.querySelector(".tcount");
+  if (c) c.textContent = n ? `（${n} 项）` : "";
+}
+
+/* ---------- markdown 渲染（含 XSS 消毒） ---------- */
+/* LLM 输出可能带任意 HTML（或诱导注入的 <img onerror> 等），marked 不做消毒，
+   这里渲染后做 DOM 级清洗：删危险标签、on* 事件属性、javascript: 链接。 */
+const _BAD_TAGS = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","LINK","META","BASE","FORM"]);
+function sanitizeHtml(html) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html;
+  const walk = (node) => {
+    for (const el of Array.from(node.querySelectorAll("*"))) {
+      if (_BAD_TAGS.has(el.tagName)) { el.remove(); continue; }
+      for (const attr of Array.from(el.attributes)) {
+        const n = attr.name.toLowerCase(), v = (attr.value || "").trim().toLowerCase();
+        if (n.startsWith("on")) el.removeAttribute(attr.name);
+        else if ((n === "href" || n === "src" || n === "xlink:href") &&
+                 (v.startsWith("javascript:") || v.startsWith("data:text/html"))) el.removeAttribute(attr.name);
+      }
+    }
+  };
+  walk(tpl.content);
+  return tpl.innerHTML;
+}
+function renderMd(el, md) {
+  let html;
+  try { html = sanitizeHtml(marked.parse(md || "")); }
+  catch (e) { html = "<pre>" + esc(md || "") + "</pre>"; }
+  el.innerHTML = '<div class="md">' + html + "</div>";
+}
+
+/* ---------- 流式解析 ---------- */
+async function readStream(resp, bot, trace) {
+  const reader = resp.body.getReader(), dec = new TextDecoder();
+  let buf = "", nThink = 0, nTool = 0;
+  if (trace) traceCount(trace, 0);
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const parts = buf.split("\n\n"); buf = parts.pop();
+    for (const p of parts) {
+      if (!p.startsWith("data:")) continue;
+      let ev;
+      try { ev = JSON.parse(p.slice(5)); } catch { continue; }
+      handleEvent(ev, bot, trace, () => { nThink++; traceCount(trace, nThink + nTool); },
+                                     () => { nTool++; traceCount(trace, nThink + nTool); });
+    }
+  }
+  // 空 Trace（既无思考也无工具）直接移除，避免回复上方留空盒子
+  if (trace && !trace.querySelector(".body").children.length) trace.remove();
+  window.__lastTrace = null;
+}
+
+function handleEvent(ev, bot, trace, bumpThink, bumpTool) {
+  if (ev.type === "stage") {
+    if (ev.stage === "report" && ev.status === "done") {
+      setStage("planning", "done"); setStage("skill", "done"); setStage("report", "done", "");
+    } else {
+      setStage(ev.stage, ev.status, ev.detail_text);
+      if (ev.stage === "employee") document.getElementById("empmeta").textContent = ev.detail_text;
+    }
+  } else if (ev.type === "thinking") {
+    if (!trace) trace = (trace = window.__lastTrace) || (window.__lastTrace = newTrace());
+    let box = trace.querySelector(".think");
+    if (!box) {
+      box = document.createElement("div"); box.className = "think";
+      box.innerHTML = '<span class="lbl">模型思考</span><span class="txt"></span>';
+      trace.querySelector(".body").appendChild(box);
+      bumpThink();
+    }
+    box.querySelector(".txt").textContent += ev.content;
+    $msgs.scrollTop = $msgs.scrollHeight;
+  } else if (ev.type === "token") {
+    if (!bot._md) { bot.textContent = ""; bot._md = ""; }
+    bot._md += ev.content;
+    renderMd(bot, bot._md);
+    $msgs.scrollTop = $msgs.scrollHeight;
+  } else if (ev.type === "tool") {
+    if (!trace) trace = window.__lastTrace || (window.__lastTrace = newTrace());
+    const args = ev.args && Object.keys(ev.args).length ? JSON.stringify(ev.args) : "";
+    if (ev.status === "start") {
+      const el = document.createElement("div"); el.className = "tool";
+      el.innerHTML = `<b>🔧 ${esc(ev.name)}</b>${args ? "(" + esc(args) + ")" : ""} <span>调用中…</span>`;
+      trace.querySelector(".body").appendChild(el);
+      trace._pending = el;
+      bumpTool();
+    } else {
+      const el = trace._pending && trace._pending.querySelector("b")
+        && trace._pending.querySelector("b").textContent.includes(ev.name) ? trace._pending : null;
+      const node = el || document.createElement("div");
+      node.className = "tool";
+      let html = `<b>🔧 ${esc(ev.name)}</b>${args ? "(" + esc(args) + ")" : ""} ✓`;
+      if (ev.preview) html += `<pre>${esc(ev.preview)}</pre>`;
+      node.innerHTML = html;
+      if (!el) trace.querySelector(".body").appendChild(node);
+      trace._pending = null;
+    }
+    $msgs.scrollTop = $msgs.scrollHeight;
+  } else if (ev.type === "todos") {
+    setStage("planning", "active", ev.items.map(t => `${t.status === "completed" ? "☑" : "☐"} ${t.content}`).join("\n"));
+  } else if (ev.type === "approval_required") {
+    setStage("skill", "active", `审批中：${ev.tool}`);
+    const el = document.createElement("div"); el.className = "approval";
+    el.innerHTML = `<b>⚠ 人工审批</b>　员工请求执行 <b>${esc(ev.tool)}</b>，参数：<code>${esc(JSON.stringify(ev.args))}</code>
+      <div class="btns"><button class="ok">批准</button><button class="no">拒绝</button></div>`;
+    const [ok, no] = el.querySelectorAll("button");
+    ok.onclick = () => decide(ev.approval_id, "approve", el, bot);
+    no.onclick = () => decide(ev.approval_id, "reject", el, bot);
+    $msgs.appendChild(el); $msgs.scrollTop = $msgs.scrollHeight;
+  } else if (ev.type === "error") {
+    addMsg("tool", "⚠ " + ev.message);
+  }
+}
+
+/* ---------- 历史对话侧栏 ---------- */
+function fmtTime(s) { return (s || "").replace("T", " ").slice(5, 16); }
+async function loadHistory(empId) {
+  try {
+    const list = await (await fetch(`/api/conversations?employee_id=${encodeURIComponent(empId)}&limit=15`, {headers: authHeaders()})).json();
+    renderConvList(list, currentConvId);
+  } catch (e) { /* 静默 */ }
+}
+function renderConvList(list, activeId) {
+  const el = document.getElementById("convlist");
+  if (!list || !list.length) {
+    el.innerHTML = '<div class="empty">暂无历史对话<br>发条消息开始吧</div>';
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const t = (c.title && c.title.trim()) ? c.title : (c.preview || "新对话");
+    const d = fmtTime(c.updated_at);
+    const emp = EMP_NAMES[c.employee_id] || c.employee_id;
+    return `<div class="conv ${c.conv_id === activeId ? "active" : ""}" data-id="${esc(c.conv_id)}" onclick="openConversation('${esc(c.conv_id)}')">
+      <div class="ct">${esc(t)}</div>
+      <div class="cs"><span class="emp-tag">${esc(emp)}</span><span>${esc(d)}</span></div>
+    </div>`;
+  }).join("");
+}
+function setActiveConv(id) {
+  document.querySelectorAll(".conv").forEach(el => el.classList.toggle("active", el.dataset.id === id));
+}
+async function refreshHistory() { if (currentEmp) await loadHistory(currentEmp); }
+
+async function openConversation(cid) {
+  try {
+    const data = await (await fetch(`/api/conversations/${encodeURIComponent(cid)}`, {headers: authHeaders()})).json();
+    if (data.error) { addMsg("tool", "⚠ " + data.error); return; }
+    convId = cid;                 // 关键：让 send() 续聊的是这个会话
+    currentConvId = cid;
+    currentEmp = data.employee_id;
+    document.getElementById("empselect").value = data.employee_id;
+    document.getElementById("hint").textContent = HINTS[data.employee_id] || "向这位数字员工提问吧。";
+    $msgs.innerHTML = ""; window.__lastTrace = null; renderStages({}); resetPipeline();
+    renderTurns(data.turns || []);
+    setActiveConv(cid);
+  } catch (e) { addMsg("tool", "⚠ 加载失败：" + e.message); }
+}
+function renderTurns(turns) {
+  for (const t of turns) {
+    if (t.role === "user") {
+      addMsg("msg user", t.content);
+    } else {
+      const bot = addMsg("msg bot", "");
+      renderMd(bot, t.content || "");
+      if (t.tool_calls && t.tool_calls.length) {
+        const items = t.tool_calls.map(tc => {
+          const args = (tc.args && Object.keys(tc.args).length) ? JSON.stringify(tc.args) : "";
+          const res = tc.result ? `<pre>${esc(tc.result)}</pre>` : "";
+          return `<div class="tool"><b>🔧 ${esc(tc.name || "")}</b>${args ? "(" + esc(args) + ")" : ""} ✓${res}</div>`;
+        }).join("");
+        const d = document.createElement("details");
+        d.className = "trace";
+        d.innerHTML = `<summary><span class="badge">工具调用</span><span class="tcount">（${t.tool_calls.length} 项）</span></summary><div class="body">${items}</div>`;
+        $msgs.appendChild(d); $msgs.scrollTop = $msgs.scrollHeight;
+      }
+    }
+  }
+  $msgs.scrollTop = $msgs.scrollHeight;
+}
+
+/* ---------- 发送 / 审批 ---------- */
+async function send() {
+  if (!convId) return;
+  const text = $input.value.trim();
+  if (!text) return;
+  $input.value = ""; $send.disabled = true;
+  resetPipeline();
+  addMsg("msg user", text);
+  const trace = newTrace();
+  window.__lastTrace = trace;
+  const bot = addMsg("msg bot", "");
+  try {
+    const resp = await fetch(`/api/conversations/${convId}/messages`, {
+      method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ message: text }),
+    });
+    await readStream(resp, bot, trace);
+  } catch (e) { addMsg("tool", "⚠ 连接失败：" + e.message); }
+  $send.disabled = false;
+  await refreshHistory();          // 刷新历史（标题/预览/计数+1）
+  setActiveConv(currentConvId);
+}
+
+async function decide(approvalId, decision, el, bot) {
+  el.querySelector(".btns").innerHTML = `<span class="resolved">${decision === "approve" ? "✓ 已批准" : "✗ 已拒绝"}</span>`;
+  const trace = newTrace(); window.__lastTrace = trace;
+  try {
+    const resp = await fetch(`/api/approvals/${approvalId}/decision`, {
+      method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ decision }),
+    });
+    await readStream(resp, bot, trace);
+  } catch (e) { addMsg("tool", "⚠ " + e.message); }
+}
+
+/* ---------- 员工切换 ---------- */
+async function selectEmployee(empId) {
+  currentEmp = empId;
+  document.getElementById("hint").textContent = HINTS[empId] || "向这位数字员工提问吧。";
+  try {
+    const r = await fetch(`/api/employees/${empId}/conversations`, { method: "POST", headers: authHeaders() });
+    const data = await r.json();
+    convId = data.conversation_id;
+    currentConvId = convId;
+  } catch (e) { addMsg("tool", "⚠ 创建会话失败：" + e.message); return; }
+  $msgs.innerHTML = ""; window.__lastTrace = null; renderStages({});
+  setStage("input", "done", new Date().toLocaleTimeString());
+  document.getElementById("empmeta").textContent = "已切换到该员工（记忆跨会话保留）";
+  await loadHistory(empId);
+  setActiveConv(currentConvId);
+}
+function newConv() { if (currentEmp) selectEmployee(currentEmp); }
+
+/* ---------- 用户身份（来自登录 token） ---------- */
+function uid() { return (Auth.user() || {}).id || "default"; }
+function authHeaders(extra) { return Object.assign({ "X-User-Id": uid(), "Authorization": "Bearer " + (Auth.token() || "") }, extra || {}); }
+
+async function init() {
+  if (!requireAuth()) return;
+  mountUserBar("userbar");
+  document.getElementById("tuneBtn").style.display = tuneRoleIsUser() ? "" : "none";
+  try {
+    emps = await (await authFetch("/api/employees")).json();
+    const sel = document.getElementById("empselect");
+    sel.innerHTML = emps.map(e => `<option value="${esc(e.id)}">${esc(e.name)} · ${esc(e.role)}</option>`).join("");
+    emps.forEach(e => { EMP_NAMES[e.id] = e.name; });
+    // 支持 ?conv=xxx 直接打开指定会话续聊
+    const qconv = new URLSearchParams(location.search).get("conv");
+    if (qconv) {
+      // 先用一个员工占位，openConversation 会切到正确员工
+      if (emps.length) await selectEmployee(emps[0].id);
+      await openConversation(qconv);
+    } else if (emps.length) {
+      await selectEmployee(emps[0].id);
+    }
+  } catch (e) { document.getElementById("empmeta").textContent = "员工列表加载失败：" + e.message; }
+}
+$input.addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+
+/* ---------- 我的调整（普通用户覆盖） ---------- */
+const TUNE_TYPES = [
+  ["skills", "技能"], ["tools", "工具"], ["sops", "SOP"], ["kbs", "知识库"],
+];
+let _tuneState = null;
+function tuneRoleIsUser() { return (Auth.user() || {}).role !== "admin"; }
+
+async function openMyTuning() {
+  if (!currentEmp) return;
+  if (!tuneRoleIsUser()) { alert("管理员使用全局模板，无需个人调整"); return; }
+  try {
+    const [me, cat] = await Promise.all([
+      authFetch(`/api/me/employees/${currentEmp}`).then(r => r.json()),
+      authFetch("/api/catalog").then(r => r.json()),
+    ]);
+    if (me.error) { alert(me.error); return; }
+    _tuneState = { empId: currentEmp, base: me.base, overrides: me.overrides || {} };
+    document.getElementById("tuneEmpName").textContent = me.name || currentEmp;
+    document.getElementById("tuneBody").innerHTML = TUNE_TYPES.map(([key, label]) => {
+      const items = (cat[key] || []);
+      const baseSet = new Set(me.base[key] || []);
+      const boxes = items.map(it => {
+        const inBase = baseSet.has(it.id);
+        const tag = inBase ? '<span style="color:#185FA5;font-size:11px;">基础</span>'
+                           : '<span style="color:#7a4ea8;font-size:11px;">可选</span>';
+        return `<label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:3px 0;">
+          <input type="checkbox" class="tune-chk" data-type="${key}" data-id="${esc(it.id)}" checked>
+          <span>${esc(it.name || it.id)}</span> ${tag}
+        </label>`;
+      }).join("") || '<div style="font-size:12px;color:#aaa;padding:4px 0;">（无可用项）</div>';
+      return `<div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">${label}</div>
+        <div style="padding-left:4px;border-left:2px solid #eee;">${boxes}</div>
+      </div>`;
+    }).join("");
+    document.getElementById("tuneModal").style.display = "flex";
+  } catch (e) { alert("加载失败：" + e.message); }
+}
+
+function closeTune() { document.getElementById("tuneModal").style.display = "none"; _tuneState = null; }
+document.getElementById("tuneCancel").onclick = closeTune;
+
+document.getElementById("tuneSave").onclick = async () => {
+  if (!_tuneState) return;
+  const { empId, base } = _tuneState;
+  const overrides = { add: {}, remove: {} };
+  for (const [key] of TUNE_TYPES) {
+    const baseSet = new Set(base[key] || []);
+    const checked = new Set(
+      [...document.querySelectorAll(`.tune-chk[data-type="${key}"]:checked`)].map(c => c.dataset.id));
+    const add = [...checked].filter(id => !baseSet.has(id));
+    const remove = [...baseSet].filter(id => !checked.has(id));
+    if (add.length) overrides.add[key] = add;
+    if (remove.length) overrides.remove[key] = remove;
+  }
+  try {
+    const j = await authFetch(`/api/me/employees/${empId}/overrides`, {
+      method: "PUT", body: { overrides },
+    }).then(r => r.json());
+    if (j.error) { alert(j.error); return; }
+    toast2("已保存，下次对话生效");
+    closeTune();
+  } catch (e) { alert("保存失败：" + e.message); }
+};
+function toast2(m) {
+  let t = document.getElementById("__toast2");
+  if (!t) { t = document.createElement("div"); t.id = "__toast2";
+    t.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c1c1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:60;opacity:0;transition:opacity .25s;";
+    document.body.appendChild(t); }
+  t.textContent = m; t.style.opacity = ".92";
+  setTimeout(() => { t.style.opacity = "0"; }, 1600);
+}
+
+init();
+</script>
+</body>
+</html>

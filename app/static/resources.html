@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>资源中心</title>
+<script src="/static/common.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f5f5f4; color: #1c1c1a; height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e6e4de; display: flex; align-items: center; gap: 14px; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header .sub { font-size: 12px; color: #999; }
+  header .nav { margin-left: auto; display: flex; gap: 8px; }
+  header .nav a { font-size: 13px; padding: 5px 14px; border: 1px solid #d3d1c7; background: #fff; border-radius: 7px; color: #185FA5; text-decoration: none; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  #tabs { width: 152px; background: #fff; border-right: 1px solid #e6e4de; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .tab { padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13.5px; color: #444; }
+  .tab:hover { background: #f0eee8; }
+  .tab.active { background: #E6F1FB; color: #185FA5; font-weight: 600; }
+  #content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .toolbar h2 { font-size: 15px; font-weight: 600; flex: 1; }
+  .toolbar button, .btn { font-size: 13px; padding: 6px 14px; border: 1px solid #185FA5; background: #185FA5; color: #fff; border-radius: 7px; cursor: pointer; }
+  .btn.ghost { background: #fff; color: #444; border-color: #d3d1c7; }
+  .btn.danger { background: #fff; color: #c0392b; border-color: #e0b4ad; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card { background: #fff; border: 1px solid #e6e4de; border-radius: 10px; padding: 14px; }
+  .card .nm { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .card .id { font-size: 11px; color: #aaa; }
+  .card .desc { font-size: 12.5px; color: #666; margin-top: 6px; line-height: 1.55; }
+  .card .acts { margin-top: 10px; display: flex; gap: 6px; }
+  .tag { font-size: 10.5px; padding: 1px 7px; border-radius: 9px; background: #eef2ee; color: #0F6E56; margin-left: 6px; }
+  .tag.custom { background: #fdf3e7; color: #b06a1a; }
+  .empty { padding: 40px; text-align: center; color: #aaa; font-size: 13px; }
+  /* modal */
+  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; z-index: 40; }
+  #modal.show { display: flex; }
+  #modal .box { background: #fff; border-radius: 12px; padding: 22px 24px; width: 560px; max-width: 92vw; max-height: 88vh; overflow-y: auto; }
+  #modal h3 { font-size: 15px; margin-bottom: 14px; }
+  #modal .f { margin-bottom: 12px; }
+  #modal .f label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+  #modal .f input, #modal .f textarea { width: 100%; font-size: 13px; padding: 7px 10px; border: 1px solid #d3d1c7; border-radius: 7px; font-family: inherit; }
+  #modal .f textarea { min-height: 90px; resize: vertical; line-height: 1.6; }
+  #modal .f textarea.tall { min-height: 200px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  #modal .acts { display: flex; gap: 8px; margin-top: 6px; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1c1c1a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 50; }
+  #toast.show { opacity: .92; }
+  /* 知识库两栏 */
+  #kbWrap { display: flex; gap: 16px; min-height: 400px; }
+  #kbList { width: 220px; }
+  #kbEntries { flex: 1; }
+  .kbi { padding: 8px 11px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 6px; border: 1px solid transparent; }
+  .kbi:hover { background: #f0eee8; }
+  .kbi.active { background: #E6F1FB; border-color: #185FA5; }
+  .ent { background: #fff; border: 1px solid #e6e4de; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .ent .t { font-size: 13px; font-weight: 600; }
+  .ent .k { font-size: 11px; color: #999; margin: 3px 0; }
+  .ent .c { font-size: 12.5px; color: #555; line-height: 1.6; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>资源中心</h1>
+  <span class="sub">统一管理技能 / 工具 / 知识库 / SOP / 连接器</span>
+  <div id="userbar" style="margin-left:auto;"></div>
+  <div class="nav">
+    <a href="/">🏠 主页</a>
+    <a href="/chat.html">💬 对话</a>
+    <a href="/admin.html">👥 员工管理</a>
+  </div>
+</header>
+<div id="main">
+  <div id="tabs">
+    <div class="tab active" data-t="skills">技能</div>
+    <div class="tab" data-t="tools">工具</div>
+    <div class="tab" data-t="kbs">知识库</div>
+    <div class="tab" data-t="sops">SOP</div>
+    <div class="tab" data-t="connectors">连接器</div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<div id="modal"><div class="box"><h3 id="mTitle"></h3><div id="mBody"></div>
+  <div class="acts"><button class="btn" id="mSave">保存</button><button class="btn ghost" id="mCancel">取消</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+let CATALOG = null, TAB = "skills";
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800); }
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+async function loadCatalog(){ CATALOG = await fetch("/api/admin/catalog").then(r=>r.json()); }
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); t.classList.add("active"); TAB=t.dataset.t; render(); });
+
+function render(){
+  const c = document.getElementById("content");
+  if(TAB==="skills") renderSkills(c);
+  else if(TAB==="tools") renderTools(c);
+  else if(TAB==="kbs") renderKbs(c);
+  else if(TAB==="sops") renderSops(c);
+  else if(TAB==="connectors") renderConnectors(c);
+}
+
+/* ---- 技能 ---- */
+function renderSkills(c){
+  c.innerHTML = `<div class="toolbar"><h2>技能（${CATALOG.skills.length}）</h2>
+    <button onclick="document.getElementById('upSkill').click()">📥 上传 zip</button>
+    <input id="upSkill" type="file" accept=".zip" style="display:none;"></div>
+    <div class="grid" id="skillGrid"></div>`;
+  const g = document.getElementById("skillGrid");
+  if(!CATALOG.skills.length){ g.innerHTML='<div class="empty">暂无技能</div>'; return; }
+  g.innerHTML = CATALOG.skills.map(s=>`
+    <div class="card">
+      <div class="nm">${esc(s.name)}<span class="tag ${s.is_custom?'custom':''}">${s.is_custom?'自定义':'内置'}</span></div>
+      <div class="id">${esc(s.id)}</div>
+      <div class="desc">${esc(s.description||'(无描述)')}</div>
+      <div class="acts"><button class="btn ghost" onclick="viewSkill('${esc(s.id)}','${esc(s.name)}')">查看</button>
+      ${s.is_custom?`<button class="btn danger" onclick="delSkill('${esc(s.id)}','${esc(s.name)}')">删除</button>`:''}</div>
+    </div>`).join("");
+  document.getElementById("upSkill").onchange = e=>{ if(e.target.files[0]) uploadSkill(e.target.files[0]); e.target.value=""; };
+}
+async function uploadSkill(f){
+  const fd=new FormData(); fd.append("file",f); toast("上传中…");
+  const j=await fetch("/api/admin/skills/upload",{method:"POST",body:fd}).then(r=>r.json());
+  if(j.error){ toast(j.error); return; } toast("已上传："+j.name); await loadCatalog(); render();
+}
+async function delSkill(id,name){
+  if(!confirm(`删除技能「${name}」？会从所有员工移除。`)) return;
+  const j=await fetch(`/api/admin/skills/${encodeURIComponent(id)}`,{method:"DELETE"}).then(r=>r.json());
+  if(j.error){ toast(j.error); return; } toast("已删除"); await loadCatalog(); render();
+}
+async function viewSkill(id,name){
+  const j=await fetch(`/api/admin/skills/${encodeURIComponent(id)}/content`).then(r=>r.json());
+  if(j.error){ toast(j.error); return; }
+  openModal(name+" · SKILL.md", `<div class="f"><label>路径</label><input value="${esc(j.path)}" readonly></div>
+    <div class="f"><label>内容</label><textarea class="tall" readonly>${esc(j.content)}</textarea></div>`, null);
+}
+
+/* ---- 工具 ---- */
+function renderTools(c){
+  c.innerHTML = `<div class="toolbar"><h2>工具（${CATALOG.tools.length}）</h2>
+    <span style="font-size:12px;color:#999;">工具由代码定义，页面可编辑说明与审批策略</span></div>
+    <div class="grid" id="toolGrid"></div>`;
+  document.getElementById("toolGrid").innerHTML = CATALOG.tools.map(t=>{
+    const na = t.needs_approval ? t.needs_approval.join(",") : "";
+    return `<div class="card">
+      <div class="nm">${esc(t.name)}</div><div class="id">${esc(t.id)}</div>
+      <div class="desc">${esc(t.description||'')}</div>
+      <div class="id" style="margin-top:6px;">需审批：${na||'否'}</div>
+      <div class="acts"><button class="btn ghost" onclick='editTool(${JSON.stringify(t).replace(/'/g,"&#39;")})'>编辑</button></div>
+    </div>`;
+  }).join("");
+}
+function editTool(t){
+  openModal("编辑工具 · "+t.id, `
+    <div class="f"><label>说明</label><textarea id="f_desc">${esc(t.description||'')}</textarea></div>
+    <div class="f"><label>需审批的决策（逗号分隔，如 approve,reject；留空=不需审批）</label><input id="f_na" value="${esc(t.needs_approval?t.needs_approval.join(','):'')}"></div>
+  `, async () => {
+    const na = document.getElementById("f_na").value.trim();
+    const arr = na ? na.split(",").map(s=>s.trim()).filter(Boolean) : null;
+    const j = await fetch(`/api/admin/tools/${encodeURIComponent(t.id)}`, {method:"PUT",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({description:document.getElementById("f_desc").value, needs_approval:arr})}).then(r=>r.json());
+    if(j.error){ toast(j.error); return false; } toast("已保存"); return true;
+  });
+}
+
+/* ---- 知识库 ---- */
+let curKb = null, kbEntries = [];
+async function renderKbs(c){
+  c.innerHTML = `<div class="toolbar"><h2>知识库（${CATALOG.knowledge_bases.length}）</h2>
+    <button onclick="newKb()">+ 新建知识库</button></div>
+    <div id="kbWrap"><div id="kbList"></div><div id="kbEntries"></div></div>`;
+  const kl = document.getElementById("kbList");
+  if(!CATALOG.knowledge_bases.length){ kl.innerHTML='<div class="empty">暂无知识库</div>'; document.getElementById("kbEntries").innerHTML=""; return; }
+  kl.innerHTML = CATALOG.knowledge_bases.map(k=>`<div class="kbi ${k.id===curKb?'active':''}" onclick="selKb('${esc(k.id)}')">${esc(k.name)}</div>`).join("");
+  if(!curKb) curKb = CATALOG.knowledge_bases[0].id;
+  await loadEntries();
+}
+async function selKb(id){ curKb=id; document.querySelectorAll(".kbi").forEach(el=>el.classList.toggle("active", el.textContent===CATALOG.knowledge_bases.find(k=>k.id===id).name)); await loadEntries(); }
+async function loadEntries(){
+  kbEntries = await fetch(`/api/admin/knowledge-bases/${encodeURIComponent(curKb)}/entries`).then(r=>r.json());
+  const box = document.getElementById("kbEntries");
+  const kb = CATALOG.knowledge_bases.find(k=>k.id===curKb);
+  box.innerHTML = `<div class="toolbar" style="margin-bottom:10px;"><h2 style="font-size:13px;">${esc(kb?kb.name:'')} 的条目（${kbEntries.length}）</h2>
+    <button onclick="editEntry(null)">+ 添加条目</button>
+    <button class="btn ghost" onclick="editKbMeta()">改名</button>
+    <button class="btn danger" onclick="delKb()">删除库</button></div>` +
+    (kbEntries.length? kbEntries.map(e=>`<div class="ent"><div class="t">${esc(e.title)} <span class="id" style="font-size:11px;color:#aaa;">${esc(e.id)}</span></div>
+      <div class="k">关键词：${esc((e.keywords||[]).join(', '))}</div><div class="c">${esc(e.content)}</div>
+      <div class="acts" style="margin-top:6px;"><button class="btn ghost" onclick='editEntry(${JSON.stringify(e).replace(/'/g,"&#39;")})'>编辑</button>
+      <button class="btn danger" onclick="delEntry('${esc(e.id)}')">删除</button></div></div>`).join("")
+      : '<div class="empty">暂无条目，点上方添加</div>');
+}
+function newKb(){ openModal("新建知识库", `
+  <div class="f"><label>ID（留空自动生成）</label><input id="f_id" placeholder="如 kb_product2"></div>
+  <div class="f"><label>名称</label><input id="f_name"></div>
+  <div class="f"><label>说明</label><input id="f_desc"></div>`, async()=>{
+  const j=await fetch("/api/admin/knowledge-bases",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({id:document.getElementById("f_id").value, name:document.getElementById("f_name").value, description:document.getElementById("f_desc").value})}).then(r=>r.json());
+  if(j.error){ toast(j.error); return false; } toast("已创建"); return true; }); }
+function editKbMeta(){ const kb=CATALOG.knowledge_bases.find(k=>k.id===curKb); openModal("编辑知识库",`
+  <div class="f"><label>名称</label><input id="f_name" value="${esc(kb.name)}"></div>
+  <div class="f"><label>说明</label><input id="f_desc" value="${esc(kb.description||'')}"></div>`, async()=>{
+  const j=await fetch(`/api/admin/knowledge-bases/${encodeURIComponent(curKb)}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:document.getElementById("f_name").value,description:document.getElementById("f_desc").value})}).then(r=>r.json());
+  if(j.error){ toast(j.error); return false; } toast("已保存"); return true; }); }
+async function delKb(){ if(!confirm("删除整个知识库及其条目？会从所有员工移除。")) return;
+  const j=await fetch(`/api/admin/knowledge-bases/${encodeURIComponent(curKb)}`,{method:"DELETE"}).then(r=>r.json()); toast("已删除"); curKb=null; await loadCatalog(); render(); }
+function editEntry(e){ const isNew=!e; openModal((isNew?"添加":"编辑")+"条目", `
+  <div class="f"><label>标题</label><input id="f_title" value="${esc(e?e.title:'')}"></div>
+  <div class="f"><label>关键词（逗号分隔）</label><input id="f_kw" value="${esc(e?(e.keywords||[]).join(','):'')}"></div>
+  <div class="f"><label>内容</label><textarea id="f_content">${esc(e?e.content:'')}</textarea></div>`, async()=>{
+  const body={title:document.getElementById("f_title").value, keywords:document.getElementById("f_kw").value.split(",").map(s=>s.trim()).filter(Boolean), content:document.getElementById("f_content").value};
+  const url=isNew?`/api/admin/knowledge-bases/${encodeURIComponent(curKb)}/entries`:`/api/admin/knowledge-bases/${encodeURIComponent(curKb)}/entries/${encodeURIComponent(e.id)}`;
+  const method=isNew?"POST":"PUT";
+  const j=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+  if(j.error){ toast(j.error); return false; } toast("已保存"); return true; }); }
+async function delEntry(eid){ if(!confirm("删除该条目？")) return;
+  await fetch(`/api/admin/knowledge-bases/${encodeURIComponent(curKb)}/entries/${encodeURIComponent(eid)}`,{method:"DELETE"}); toast("已删除"); await loadEntries(); }
+
+/* ---- SOP ---- */
+function renderSops(c){
+  c.innerHTML = `<div class="toolbar"><h2>SOP 流程文档（${CATALOG.sops.length}）</h2>
+    <button onclick="editSop(null)">+ 新建 SOP</button></div><div class="grid" id="sopGrid"></div>`;
+  document.getElementById("sopGrid").innerHTML = CATALOG.sops.map(s=>`<div class="card">
+    <div class="nm">${esc(s.name)}</div><div class="id">${esc(s.id)}</div>
+    <div class="desc">${esc(s.description||'')}</div>
+    <div class="acts"><button class="btn ghost" onclick="editSop('${esc(s.id)}')">编辑</button>
+    <button class="btn danger" onclick="delSop('${esc(s.id)}','${esc(s.name)}')">删除</button></div></div>`).join("");
+}
+function editSop(sid){
+  const s = sid ? CATALOG.sops.find(x=>x.id===sid) : null;
+  openModal((sid?"编辑":"新建")+" SOP", `
+    <div class="f"><label>ID（留空自动生成）</label><input id="f_id" value="${esc(s?s.id:'')}" ${s?'readonly':''}></div>
+    <div class="f"><label>名称</label><input id="f_name" value="${esc(s?s.name:'')}"></div>
+    <div class="f"><label>说明</label><input id="f_desc" value="${esc(s?s.description:'')}"></div>
+    <div class="f"><label>内容（markdown 流程文档）</label><textarea id="f_content" class="tall">${esc(s?s.content||'':'')}</textarea></div>`, async()=>{
+    const body={name:document.getElementById("f_name").value, description:document.getElementById("f_desc").value, content:document.getElementById("f_content").value};
+    if(s){ const j=await fetch(`/api/admin/sops/${encodeURIComponent(sid)}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json()); if(j.error){toast(j.error);return false;} }
+    else { body.id=document.getElementById("f_id").value; const j=await fetch("/api/admin/sops",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json()); if(j.error){toast(j.error);return false;} }
+    toast("已保存"); return true; });
+}
+async function delSop(id,name){ if(!confirm(`删除 SOP「${name}」？`)) return;
+  await fetch(`/api/admin/sops/${encodeURIComponent(id)}`,{method:"DELETE"}); toast("已删除"); await loadCatalog(); render(); }
+
+/* ---- 连接器 ---- */
+function renderConnectors(c){
+  c.innerHTML = `<div class="toolbar"><h2>连接器（${CATALOG.connectors.length}）</h2>
+    <button onclick="editConn(null)">+ 新建连接器</button></div><div class="grid" id="connGrid"></div>`;
+  document.getElementById("connGrid").innerHTML = CATALOG.connectors.map(co=>`<div class="card">
+    <div class="nm">${esc(co.name)}</div><div class="id">${esc(co.id)}</div>
+    <div class="desc">${esc(co.description||'')}</div>
+    <div class="acts"><button class="btn ghost" onclick="editConn('${esc(co.id)}')">编辑</button>
+    <button class="btn danger" onclick="delConn('${esc(co.id)}','${esc(co.name)}')">删除</button></div></div>`).join("");
+}
+async function editConn(cid){
+  const co = cid ? CATALOG.connectors.find(x=>x.id===cid) : null;
+  // catalog() 列表不含 config，单独取
+  let cfg = {};
+  if(cid){ try{ const j=await fetch(`/api/admin/connectors/${encodeURIComponent(cid)}`).then(r=>r.json()); cfg=j.config||{}; }catch(e){} }
+  openModal((cid?"编辑":"新建")+" 连接器", `
+    <div class="f"><label>ID（留空自动生成）</label><input id="f_id" value="${esc(co?co.id:'')}" ${co?'readonly':''}></div>
+    <div class="f"><label>名称</label><input id="f_name" value="${esc(co?co.name:'')}"></div>
+    <div class="f"><label>说明</label><input id="f_desc" value="${esc(co?co.description:'')}"></div>
+    <div class="f"><label>配置（JSON：transport/command/args 等）</label><textarea id="f_cfg" class="tall">${esc(JSON.stringify(cfg,null,2))}</textarea></div>`, async()=>{
+    let cfgObj; try{ cfgObj=JSON.parse(document.getElementById("f_cfg").value||"{}"); }catch(e){ toast("config JSON 格式错误"); return false; }
+    const body={name:document.getElementById("f_name").value, description:document.getElementById("f_desc").value, config:cfgObj};
+    if(co){ const j=await fetch(`/api/admin/connectors/${encodeURIComponent(cid)}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json()); if(j.error){toast(j.error);return false;} }
+    else { body.id=document.getElementById("f_id").value; const j=await fetch("/api/admin/connectors",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json()); if(j.error){toast(j.error);return false;} }
+    toast("已保存"); return true; });
+}
+async function delConn(id,name){ if(!confirm(`删除连接器「${name}」？`)) return;
+  await fetch(`/api/admin/connectors/${encodeURIComponent(id)}`,{method:"DELETE"}); toast("已删除"); await loadCatalog(); render(); }
+
+/* ---- modal 通用 ---- */
+let onSave = null;
+function openModal(title, bodyHtml, saveFn){
+  document.getElementById("mTitle").textContent = title;
+  document.getElementById("mBody").innerHTML = bodyHtml;
+  onSave = saveFn;
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(){ document.getElementById("modal").classList.remove("show"); onSave=null; }
+document.getElementById("mCancel").onclick = closeModal;
+document.getElementById("mSave").onclick = async () => {
+  if(onSave){ const ok = await onSave(); if(ok){ closeModal(); await loadCatalog(); render(); } }
+  else closeModal();
+};
+
+(async function init(){
+  if (!requireAdmin()) return;
+  mountUserBar("userbar");
+  window.fetch = authFetch;  // 所有请求自动带 token + 401 跳登录
+  await loadCatalog(); render();
+})();
+</script>
+</body>
+</html>

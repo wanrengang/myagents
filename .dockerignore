@@ -1,0 +1,26 @@
+# 版本控制忽略
+.venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+
+# 运行时数据与日志（由卷 / 备份脚本管理，不进镜像 / 仓库）
+data/
+backups/
+logs/
+*.log
+demo.db*
+store.db*
+catalog.db*
+conversations.db*
+traces.db*
+
+# 用户上传的自定义技能（运行期产生）
+skills-custom/
+
+# 依赖锁可选忽略（保留亦可，便于审计）
+# requirements.lock.txt
+
+# 系统文件
+.DS_Store

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>数字员工管理</title>
+<script src="/static/common.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f5f5f4; color: #1c1c1a; height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e6e4de; display: flex; align-items: center; gap: 14px; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header .sub { font-size: 12px; color: #999; }
+  header a.back { margin-left: auto; font-size: 13px; padding: 5px 14px; border: 1px solid #d3d1c7; background: #fff; border-radius: 7px; color: #185FA5; text-decoration: none; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  /* 左：员工列表 */
+  #sidebar { width: 248px; background: #fff; border-right: 1px solid #e6e4de; display: flex; flex-direction: column; min-height: 0; }
+  .side-head { padding: 12px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; }
+  .side-head h2 { font-size: 13px; font-weight: 500; color: #444; flex: 1; }
+  .side-head button { font-size: 12px; padding: 4px 10px; border: 1px solid #185FA5; background: #185FA5; color: #fff; border-radius: 6px; cursor: pointer; }
+  #elist { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .emp { padding: 9px 11px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; background: #faf9f6; }
+  .emp:hover { background: #f0eee8; }
+  .emp.active { background: #E6F1FB; border-color: #185FA5; }
+  .emp .en { font-size: 13.5px; font-weight: 500; }
+  .emp .er { font-size: 11px; color: #999; margin-top: 2px; }
+  .empty { font-size: 12px; color: #aaa; padding: 18px 10px; text-align: center; }
+  /* 右：表单 */
+  #form { flex: 1; overflow-y: auto; padding: 22px 28px; }
+  .grid { display: grid; grid-template-columns: 110px 1fr; gap: 14px 16px; align-items: start; max-width: 860px; }
+  .grid label { font-size: 13px; color: #555; padding-top: 7px; }
+  .grid input, .grid textarea, .grid select { font-size: 13px; padding: 7px 10px; border: 1px solid #d3d1c7; border-radius: 8px; background: #fff; width: 100%; font-family: inherit; }
+  .grid textarea { min-height: 150px; line-height: 1.6; resize: vertical; }
+  .grid input:focus, .grid textarea:focus, .grid select:focus { outline: none; border-color: #185FA5; }
+  .readonly { background: #f3f2ee !important; color: #888; }
+  .groups { max-width: 860px; margin-top: 22px; border-top: 1px solid #e6e4de; padding-top: 18px; }
+  .gtitle { font-size: 14px; font-weight: 600; margin: 18px 0 10px; color: #333; }
+  .gtitle:first-child { margin-top: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 6px 11px; border: 1px solid #d3d1c7; border-radius: 18px; background: #fff; cursor: pointer; user-select: none; }
+  .chip input { display: none; }
+  .chip.on { background: #E6F1FB; border-color: #185FA5; color: #185FA5; }
+  .chip .desc { color: #aaa; font-size: 11px; }
+  .actions { max-width: 860px; margin-top: 26px; display: flex; gap: 10px; }
+  .actions button { font-size: 13px; padding: 8px 20px; border-radius: 8px; cursor: pointer; border: 1px solid #d3d1c7; background: #fff; }
+  .actions .save { background: #185FA5; color: #fff; border-color: #185FA5; }
+  .actions .del { color: #c0392b; border-color: #e0b4ad; margin-left: auto; }
+  .hint { font-size: 12px; color: #999; margin-top: 8px; line-height: 1.6; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1c1c1a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #toast.show { opacity: .92; }
+</style>
+</head>
+<body>
+<header>
+  <h1>数字员工管理</h1>
+  <span class="sub">在页面上配置技能 / 工具 / 知识库 / SOP / 连接器，保存即时生效</span>
+  <div id="userbar" style="margin-left:auto;"></div>
+  <a class="back" href="/">🏠 主页</a>
+  <a class="back" href="/chat.html">💬 对话</a>
+  <a class="back" href="/resources.html">📚 资源中心</a>
+  <a class="back" href="/users.html">👤 用户</a>
+</header>
+<div id="main">
+  <div id="sidebar">
+    <div class="side-head"><h2>员工</h2><button onclick="newEmp()">+ 新建</button></div>
+    <div id="elist"></div>
+  </div>
+  <div id="form">
+    <div class="grid">
+      <label>员工 ID</label>
+      <input id="f_id" class="readonly" placeholder="保存后自动生成" readonly>
+      <label>名称 *</label>
+      <input id="f_name" placeholder="如：小苏">
+      <label>角色</label>
+      <input id="f_role" placeholder="如：售前售后客服">
+      <label>模型</label>
+      <input id="f_model" placeholder="如：openai:deepseek-v4-flash">
+      <label>运行后端</label>
+      <select id="f_backend">
+        <option value="state">state（默认，标准工具后端）</option>
+        <option value="local_shell">local_shell（数据分析沙箱：execute/read_file/ls/write_file）</option>
+      </select>
+      <label>人设</label>
+      <textarea id="f_persona" placeholder="描述该员工的身份、语气与工作原则…"></textarea>
+    </div>
+
+    <div class="groups" id="groups">
+      <div class="gtitle" style="display:flex;align-items:center;gap:10px;">
+        <span>技能 Skills</span>
+        <a href="/resources.html" style="font-size:12px;color:#185FA5;text-decoration:none;">管理技能 →</a>
+      </div>
+      <div class="chips" id="g_skills"></div>
+      <div class="gtitle">工具 Tools</div>
+      <div class="chips" id="g_tools"></div>
+      <div class="gtitle">知识库 Knowledge Bases</div>
+      <div class="chips" id="g_kbs"></div>
+      <div class="gtitle">SOP 流程文档</div>
+      <div class="chips" id="g_sops"></div>
+      <div class="gtitle">连接器 Connectors（MCP）</div>
+      <div class="chips" id="g_connectors"></div>
+      <div class="hint">提示：勾选「start_refund」工具会自动启用人工审批；勾选知识库后该员工的 kb_search 只检索所选库。</div>
+    </div>
+
+    <div class="actions">
+      <button class="save" onclick="saveEmp()">保存</button>
+      <button class="del" onclick="delEmp()">删除该员工</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let CATALOG = null;     // 目录
+let EMPLOYEES = [];     // 全部员工
+let CURRENT = null;     // 当前编辑的员工（null=新建）
+const SEL = { skills: new Set(), tools: new Set(), kbs: new Set(), sops: new Set(), connectors: new Set() };
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+function esc(s) { return (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// 渲染一个 chip 多选组
+function renderChips(containerId, items, selKey, selected) {
+  const box = document.getElementById(containerId);
+  box.innerHTML = "";
+  if (!items.length) { box.innerHTML = '<span class="hint">（暂无可选项）</span>'; return; }
+  items.forEach(it => {
+    const on = selected.has(it.id);
+    const el = document.createElement("label");
+    el.className = "chip" + (on ? " on" : "");
+    el.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}><span>${esc(it.name)}</span>`
+      + (it.description ? `<span class="desc">${esc(it.description)}</span>` : "");
+    el.querySelector("input").addEventListener("change", e => {
+      if (e.target.checked) SEL[selKey].add(it.id); else SEL[selKey].delete(it.id);
+      el.classList.toggle("on", e.target.checked);
+    });
+    box.appendChild(el);
+  });
+}
+
+function syncChips() {
+  renderChips("g_skills", CATALOG.skills, "skills", SEL.skills);
+  renderChips("g_tools", CATALOG.tools, "tools", SEL.tools);
+  renderChips("g_kbs", CATALOG.knowledge_bases, "kbs", SEL.kbs);
+  renderChips("g_sops", CATALOG.sops, "sops", SEL.sops);
+  renderChips("g_connectors", CATALOG.connectors, "connectors", SEL.connectors);
+}
+
+function renderList() {
+  const box = document.getElementById("elist");
+  box.innerHTML = "";
+  if (!EMPLOYEES.length) { box.innerHTML = '<div class="empty">暂无员工，点击右上「+ 新建」</div>'; return; }
+  EMPLOYEES.forEach(e => {
+    const el = document.createElement("div");
+    el.className = "emp" + (CURRENT && CURRENT.id === e.id ? " active" : "");
+    el.innerHTML = `<div class="en">${esc(e.name)}</div><div class="er">${esc(e.role || "")} · ${esc(e.backend)}</div>`;
+    el.onclick = () => loadEmp(e.id);
+    box.appendChild(el);
+  });
+}
+
+function clearForm() {
+  CURRENT = null;
+  document.getElementById("f_id").value = "";
+  document.getElementById("f_name").value = "";
+  document.getElementById("f_role").value = "";
+  document.getElementById("f_model").value = window.__DEFAULT_MODEL || "openai:deepseek-v4-flash";
+  document.getElementById("f_backend").value = "state";
+  document.getElementById("f_persona").value = "";
+  SEL.skills.clear(); SEL.tools.clear(); SEL.kbs.clear(); SEL.sops.clear(); SEL.connectors.clear();
+  syncChips();
+  renderList();
+}
+
+function loadEmp(id) {
+  const e = EMPLOYEES.find(x => x.id === id);
+  if (!e) return;
+  CURRENT = e;
+  document.getElementById("f_id").value = e.id;
+  document.getElementById("f_name").value = e.name || "";
+  document.getElementById("f_role").value = e.role || "";
+  document.getElementById("f_model").value = e.model || "";
+  document.getElementById("f_backend").value = e.backend || "state";
+  document.getElementById("f_persona").value = e.persona || "";
+  SEL.skills = new Set(e.skills || []);
+  SEL.tools = new Set(e.tools || []);
+  SEL.kbs = new Set(e.kbs || []);
+  SEL.sops = new Set(e.sops || []);
+  SEL.connectors = new Set(e.connectors || []);
+  syncChips();
+  renderList();
+}
+
+function newEmp() { clearForm(); }
+
+function collect() {
+  return {
+    name: document.getElementById("f_name").value.trim(),
+    role: document.getElementById("f_role").value.trim(),
+    model: document.getElementById("f_model").value.trim(),
+    backend: document.getElementById("f_backend").value,
+    persona: document.getElementById("f_persona").value,
+    skills: [...SEL.skills], tools: [...SEL.tools], kbs: [...SEL.kbs],
+    sops: [...SEL.sops], connectors: [...SEL.connectors],
+  };
+}
+
+async function saveEmp() {
+  const data = collect();
+  if (!data.name) { toast("请填写名称"); return; }
+  try {
+    let res;
+    if (CURRENT) {
+      res = await fetch(`/api/admin/employees/${encodeURIComponent(CURRENT.id)}`, {
+        method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data),
+      });
+    } else {
+      res = await fetch("/api/admin/employees", {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data),
+      });
+    }
+    const j = await res.json();
+    if (j.error) { toast("保存失败：" + j.error); return; }
+    toast(CURRENT ? "已更新" : "已创建：" + j.id);
+    await reload();
+    if (!CURRENT) loadEmp(j.id); else renderList();
+  } catch (e) { toast("保存出错：" + e.message); }
+}
+
+async function delEmp() {
+  if (!CURRENT) { toast("请先选择一个员工"); return; }
+  if (!confirm(`确认删除员工「${CURRENT.name}」？该操作不可恢复。`)) return;
+  try {
+    const res = await fetch(`/api/admin/employees/${encodeURIComponent(CURRENT.id)}`, { method: "DELETE" });
+    const j = await res.json();
+    if (j.ok) { toast("已删除"); await reload(); clearForm(); }
+  } catch (e) { toast("删除出错：" + e.message); }
+}
+
+async function reload() {
+  const [c, es] = await Promise.all([
+    fetch("/api/admin/catalog").then(r => r.json()),
+    fetch("/api/admin/employees").then(r => r.json()),
+  ]);
+  CATALOG = c;
+  EMPLOYEES = es.filter(x => x && !x.error);
+  if (CURRENT) CURRENT = EMPLOYEES.find(x => x.id === CURRENT.id) || null;
+  renderList();
+}
+
+(async function init() {
+  if (!requireAdmin()) return;
+  mountUserBar("userbar");
+  window.fetch = authFetch;
+  await reload();
+  // 新建员工的默认模型（含 openai: 前缀），避免用户填错导致编译失败
+  try {
+    const d = await fetch("/api/admin/defaults").then(r => r.json());
+    window.__DEFAULT_MODEL = d.model || "openai:deepseek-v4-flash";
+  } catch (e) { window.__DEFAULT_MODEL = "openai:deepseek-v4-flash"; }
+  // 首次进入默认选中第一个员工，方便查看
+  if (!CURRENT && EMPLOYEES.length) loadEmp(EMPLOYEES[0].id);
+  else syncChips();
+})();
+</script>
+</body>
+</html>
