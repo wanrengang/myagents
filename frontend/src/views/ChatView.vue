@@ -60,11 +60,21 @@
       <div class="msgs" ref="msgsRef">
         <template v-for="(msg, idx) in messages" :key="idx">
           <!-- 用户消息 -->
-          <div v-if="msg.role === 'user'" class="msg user">{{ msg.content }}</div>
+          <div v-if="msg.role === 'user'" class="msg user">
+            <div class="msg-text">{{ msg.content }}</div>
+            <div class="msg-meta">
+              <span class="msg-time">{{ msg.time }}</span>
+              <span class="msg-copy" @click="copyText(msg.content)">复制</span>
+            </div>
+          </div>
           <!-- Bot 消息 -->
           <div v-else class="msg bot">
             <div v-if="msg.html" class="md" v-html="msg.html"></div>
             <div v-else-if="msg.content" class="md">{{ msg.content }}</div>
+            <div class="msg-meta bot-meta">
+              <span class="msg-time">{{ msg.time }}</span>
+              <span class="msg-copy" @click="copyText(msg.html || msg.content)">复制</span>
+            </div>
           </div>
           <!-- Trace（思考/工具） -->
           <n-collapse v-if="msg.trace && msg.trace.length" :default-expanded-names="msg.traceExpanded ? ['t'] : []" class="trace-collapse">
@@ -139,7 +149,7 @@ const route = useRoute()
 
 const STAGES = [
   ['input', '用户输入'], ['employee', 'Employee 加载'], ['sop', '加载 SOP'],
-  ['skills', '加载 Skills'], ['planning', 'DeepAgents 规划'], ['skill', '调用 Skill'],
+  ['skills', '加载 Skills'], ['planning', '智能体规划'], ['skill', '调用 Skill'],
   ['report', '输出回复'],
 ]
 const HINTS = {
@@ -162,7 +172,7 @@ const stageDetail = reactive({})
 const msgsRef = ref(null)
 
 const empOptions = computed(() =>
-  employees.value.map(e => ({ label: `${e.name} · ${e.role}`, value: e.id }))
+  employees.value.map(e => ({ label: e.role || e.name, value: e.id }))
 )
 
 function fmtTime(s) { return (s || '').replace('T', ' ').slice(5, 16) }
@@ -291,9 +301,11 @@ async function send() {
   input.value = ''
   sending.value = true
   resetPipeline()
-  messages.value.push({ role: 'user', content: text })
+  const now = fmtNow()
+  messages.value.push({ role: 'user', content: text, time: now })
   const botIdx = messages.value.length
-  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false })
+  const now = fmtNow()
+  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false, time: now })
   try {
     const resp = await fetch(`/api/conversations/${convId.value}/messages`, {
       method: 'POST',
@@ -312,7 +324,8 @@ async function decide(approvalId, decision, msgIdx) {
   const msg = messages.value[msgIdx]
   msg.approval.resolved = decision === 'approve' ? '✓ 已批准' : '✗ 已拒绝'
   const traceIdx = messages.value.length
-  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false })
+  const now = fmtNow()
+  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false, time: now })
   try {
     const resp = await fetch(`/api/approvals/${approvalId}/decision`, {
       method: 'POST',
@@ -344,9 +357,9 @@ async function openConversation(cid) {
     resetPipeline()
     for (const t of (data.turns || [])) {
       if (t.role === 'user') {
-        messages.value.push({ role: 'user', content: t.content })
+        messages.value.push({ role: 'user', content: t.content, time: fmtNow() })
       } else {
-        const msg = { role: 'bot', content: '', html: renderMd(t.content || ''), _md: t.content || '', trace: [] }
+        const msg = { role: 'bot', content: '', html: renderMd(t.content || ''), _md: t.content || '', trace: [], time: fmtNow() }
         if (t.tool_calls && t.tool_calls.length) {
           msg.trace = t.tool_calls.map(tc => ({
             type: 'tool',
@@ -386,6 +399,16 @@ function openTrace() {
     const url = router.resolve({ name: 'trace', query: { conv: convId.value } }).href
     window.open(url, '_blank')
   }
+}
+
+function fmtNow() {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+}
+
+function copyText(text) {
+  if (!text) return
+  navigator.clipboard.writeText(typeof text === 'string' ? text.replace(/<[^>]+>/g, '') : '').catch(() => {})
 }
 
 /* ---------- 初始化 ---------- */
@@ -491,6 +514,13 @@ onMounted(async () => {
 }
 .msg.user { align-self: flex-end; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border-bottom-right-radius: 4px; }
 .msg.bot { align-self: flex-start; background: #ffffff; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+.msg-text { }
+.msg-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; opacity: 0.6; }
+.bot-meta { color: #94a3b8; }
+.msg-meta .msg-time { }
+.msg-meta .msg-copy { cursor: pointer; transition: opacity 0.15s; }
+.msg-meta .msg-copy:hover { opacity: 1; text-decoration: underline; }
+.user .msg-meta { justify-content: flex-end; }
 
 /* markdown 排版 */
 .md :deep(h1), .md :deep(h2), .md :deep(h3) { line-height: 1.3; margin: 14px 0 8px; font-weight: 600; }
