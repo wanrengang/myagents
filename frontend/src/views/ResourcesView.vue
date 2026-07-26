@@ -31,7 +31,7 @@
               <n-tag v-if="it.needs_approval" type="warning" size="tiny" round bordered>需审批</n-tag>
             <div class="card-id">{{ it.id }}</div>
             <div class="card-desc">{{ it.description }}</div>
-            <div class="card-acts"><n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('tools', it)">编辑</n-button></div>
+            <div class="card-acts"></div>
           </div>
         </div>
       </n-tab-pane>
