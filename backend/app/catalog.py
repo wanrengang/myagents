@@ -448,6 +448,11 @@ def seed_if_empty():
                     (it["id"], "kb_product", it["title"],
                      json.dumps(it["keywords"], ensure_ascii=False), it["content"]))
 
+    # 员工手册知识库
+    cur.execute("INSERT OR IGNORE INTO knowledge_bases VALUES(?,?,?)",
+                ("kb_employee_handbook", "员工手册", "智选智能硬件有限公司员工手册（含人事制度、薪酬福利、行为规范等）"))
+    # 员工手册条目会在首次通过管理后台导入或手工写入
+
     # --- sops（可勾选流程文档，对齐原 yaml 的 sop 字段语义）---
     sops = [
         ("sop_refund", "退款流程（刚性）", "用户要求退款时调用 start_refund，自动进入人工审批",
@@ -503,14 +508,14 @@ def seed_if_empty():
         "xiaosu": dict(
             skills=["product-faq", "complaint-handling"],
             tools=["kb_search", "create_ticket", "start_refund"],
-            kbs=["kb_product"], sops=["sop_refund", "sop_complaint"], cons=["crm"]),
+            kbs=["kb_product", "kb_employee_handbook"], sops=["sop_refund", "sop_complaint"], cons=["crm"]),
         "xiaoshu": dict(
             skills=["data-analysis"], tools=[], kbs=[], sops=[], cons=[]),
         "xiaoxiao": dict(
             skills=["enterprise-sales"],
             tools=["kb_search", "generate_solution_doc", "query_product_wiki",
                    "list_product_catalog", "bocha_search"],
-            kbs=["kb_product"], sops=[], cons=["crm"]),
+            kbs=["kb_product", "kb_employee_handbook"], sops=[], cons=["crm"]),
     }
     for emp_id, sel in seeds.items():
         spec = load_spec(str(ROOT / "app" / "employees" / f"{emp_id}.yaml"))
