@@ -82,7 +82,10 @@ FAQ = [
 
 @tool
 def kb_search(query: str) -> str:
-    """检索产品知识库。输入产品名/主题关键词，返回匹配的 FAQ 条目（含条目号，回答时需标注依据）。"""
+    """【知识库检索】按关键词搜索产品 FAQ 知识库。
+
+    售前售后客服回答产品问题时调用此工具，输入产品名/主题关键词返回匹配条目。
+    回答时需标注来源条目编号（如"依据：FAQ-001"）。"""
     q = query.lower()
     hits = []
     for item in FAQ:
@@ -99,7 +102,9 @@ def kb_search(query: str) -> str:
 
 @tool
 def create_ticket(category: str, urgency: str, summary: str) -> str:
-    """登记客服工单。urgency 取 urgent/high/normal。返回工单号与预计响应时间。"""
+    """【登记工单】登记客服工单，提交给售后团队处理。
+
+    投诉处理或需要人工跟进时调用。urgency 取 urgent（2小时响应）/ high（24小时）/ normal（48小时）。""""
     assert urgency in ("urgent", "high", "normal"), "urgency 必须是 urgent/high/normal"
     ticket_id = "T" + time.strftime("%m%d%H%M%S")
     sla = {"urgent": "2 小时", "high": "24 小时", "normal": "48 小时"}[urgency]

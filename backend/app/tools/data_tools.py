@@ -22,8 +22,9 @@ DATA_DIR = ROOT / "workspace" / "data"
 
 @tool
 def get_my_id() -> str:
-    """返回当前登录用户的 ID。生成看板/文件需按用户隔离时，用它拼路径，
-    例如 write_file(f"/data/{get_my_id()}/dashboard.html")，这样不同用户的看板互不可见。"""
+    """【获取用户 ID】返回当前登录用户的 ID。
+
+    用于生成按用户隔离的文件路径，如 write_file(f"/data/{get_my_id()}/dashboard.html")。"""
     try:
         return (get_config() or {}).get("configurable", {}).get("user_id", "default")
     except Exception:
@@ -32,9 +33,10 @@ def get_my_id() -> str:
 
 @tool
 def run_python(code: str) -> str:
-    """运行 Python 代码（支持 pandas/matplotlib），返回 stdout。
-    工作目录是数据目录，读取数据集直接用文件名（如 `pd.read_csv("sample_sales.csv")`），
-    不要用 /data/ 前缀。用于数据分析计算；写 HTML/图片文件请用 write_file。"""
+    """【运行 Python 代码】在数据目录执行 Python 数据分析代码（支持 pandas/matplotlib）。
+
+    数据分析师处理数据问题时调用此工具。工作目录是 workspace/data/，
+    读取数据集直接用文件名（如 pd.read_csv("sample_sales.csv")），无需 /data/ 前缀。"""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     script = textwrap.dedent(code)
     fd, path = tempfile.mkstemp(suffix=".py", dir=str(DATA_DIR), prefix="_run_")

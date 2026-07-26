@@ -20,8 +20,9 @@ BOCHA_URL = "https://maas-api.ai-yuanjing.com/openapi/v1/uniclaw/general/tool/bo
 
 @tool
 def bocha_search(query: str) -> str:
-    """联网搜索工具。输入搜索关键词，返回网页搜索结果（标题、摘要、链接）。
-    用于查询实时信息、最新新闻、产品资料、未知事实等知识库之外的内容。
+    """【联网搜索】搜索网络上的实时信息。
+
+    当用户需要查新闻、政策、竞品动态、最新资讯等知识库之外的内容时调用此工具。
     回答时需标注信息来源链接。"""
     key = os.environ.get("BOCHA_API_KEY", "").strip()
     if not key:
