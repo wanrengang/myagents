@@ -429,7 +429,6 @@ def seed_if_empty():
         ("kb_search", "知识库检索", "检索产品 FAQ 知识库", "local", None),
         ("create_ticket", "工单登记", "登记客服工单", "local", None),
         ("start_refund", "退款流程", "发起退款（需人工审批）", "local", json.dumps(["approve", "reject"])),
-        ("run_python", "运行Python", "运行 pandas/matplotlib 数据分析代码", "local", None),
         ("bocha_search", "联网搜索", "联网搜索实时信息（博查）", "local", None),
         ("get_my_id", "获取用户ID", "返回当前登录用户的 ID", "local", None),
         ("get_current_time", "获取当前时间", "获取当前真实日期时间（东八区）", "local", None),

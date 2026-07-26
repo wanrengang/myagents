@@ -29,9 +29,9 @@
             <div class="card-head"><span class="card-name">{{ it.name }}</span>
               <n-tag v-if="it.is_global" type="info" size="tiny" round bordered>内置</n-tag>
               <n-tag v-if="it.needs_approval" type="warning" size="tiny" round bordered>需审批</n-tag>
+            </div>
             <div class="card-id">{{ it.id }}</div>
             <div class="card-desc">{{ it.description }}</div>
-            <div class="card-acts"></div>
           </div>
         </div>
       </n-tab-pane>

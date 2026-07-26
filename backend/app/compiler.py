@@ -21,7 +21,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.spec import EmployeeSpec
 from app.tools.kb import create_ticket
-from app.tools.data_tools import get_my_id, run_python
+from app.tools.data_tools import get_my_id
 from app.tools.search import bocha_search
 from app.tools.time_tools import get_current_time
 from app.tools.wiki_tools import query_product_wiki, list_product_catalog
@@ -37,7 +37,6 @@ VENV_BIN = str(ROOT / ".venv" / "bin")
 # /data/ 路径不映射的坑（模型用 pd.read_csv("/data/x.csv") 会失败）。
 ALL_LOCAL_TOOLS = {
     "create_ticket": create_ticket,
-    "run_python": run_python,
     "bocha_search": bocha_search,
     "get_my_id": get_my_id,
     "get_current_time": get_current_time,
