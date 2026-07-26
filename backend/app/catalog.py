@@ -22,6 +22,10 @@ from pathlib import Path
 from app.paths import db_path
 from app.spec import load_spec  # 仅种子阶段用于读取 yaml 的人设等字段
 
+# 全局默认工具名列表（与 compiler.py GLOBAL_TOOL_NAMES 保持一致）
+# 这些工具自动注入所有员工，不依赖 tools 字段声明
+GLOBAL_TOOL_NAMES = {"get_current_time"}
+
 ROOT = Path(__file__).resolve().parent.parent
 DB = db_path("catalog.db")
 
@@ -675,7 +679,8 @@ def catalog() -> dict:
                     "dir": s["dir"], "is_custom": bool(s["dir"] and s["dir"].startswith("skills-custom/"))}
                    for s in allrows("skills")],
         "tools": [{"id": t["id"], "name": t["name"], "description": t["description"],
-                   "needs_approval": json.loads(t["needs_approval"]) if t["needs_approval"] else None}
+                   "needs_approval": json.loads(t["needs_approval"]) if t["needs_approval"] else None,
+                   "is_global": t["id"] in GLOBAL_TOOL_NAMES}
                   for t in allrows("tools")],
         "knowledge_bases": [{"id": k["id"], "name": k["name"], "description": k["description"]}
                             for k in allrows("knowledge_bases")],

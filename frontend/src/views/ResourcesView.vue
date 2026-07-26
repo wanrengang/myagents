@@ -26,7 +26,9 @@
         <div class="res-toolbar"><span class="res-title">工具（{{ catalog.tools?.length || 0 }}）</span></div>
         <div class="card-grid">
           <div v-for="it in (catalog.tools || [])" :key="it.id" class="res-card tech-card">
-            <div class="card-head"><span class="card-name">{{ it.name }}</span><n-tag v-if="it.needs_approval" type="warning" size="tiny" round bordered>需审批</n-tag></div>
+            <div class="card-head"><span class="card-name">{{ it.name }}</span>
+              <n-tag v-if="it.is_global" type="info" size="tiny" round bordered>内置</n-tag>
+              <n-tag v-if="it.needs_approval" type="warning" size="tiny" round bordered>需审批</n-tag>
             <div class="card-id">{{ it.id }}</div>
             <div class="card-desc">{{ it.description }}</div>
             <div class="card-acts"><n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('tools', it)">编辑</n-button></div>
@@ -100,9 +102,9 @@
     <!-- 编辑弹窗 -->
     <n-modal v-model:show="modalShow" preset="card" :title="modalTitle" style="width:640px;max-width:92vw">
       <n-form label-placement="left" :label-width="80" size="small">
-        <n-form-item v-if="!editing?.id" label="ID"><n-input v-model:value="modalForm.id" placeholder="唯一标识，如 my-skill" /></n-form-item>
-        <n-form-item label="名称"><n-input v-model:value="modalForm.name" placeholder="显示名称" /></n-form-item>
-        <n-form-item label="描述"><n-input v-model:value="modalForm.description" type="textarea" :rows="2" /></n-form-item>
+        <n-form-item v-if="modalType !== 'skills' && !editing?.id" label="ID"><n-input v-model:value="modalForm.id" placeholder="唯一标识，如 my-skill" /></n-form-item>
+        <n-form-item v-if="modalType !== 'skills'" label="名称"><n-input v-model:value="modalForm.name" placeholder="显示名称" /></n-form-item>
+        <n-form-item v-if="modalType !== 'skills'" label="描述"><n-input v-model:value="modalForm.description" type="textarea" :rows="2" /></n-form-item>
         <n-form-item v-if="modalType === 'skills'" label="技能文件">
           <n-upload
             :default-upload="false"
