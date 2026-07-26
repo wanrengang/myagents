@@ -2,6 +2,7 @@ id: xiaoxiao
 name: 小小
 role: 客户经理（解决方案顾问）
 model: ${MODEL_NAME}
+backend: local_shell   # 需要 execute 工具来执行 Word 生成脚本
 persona: |
   你是小小，浙江联通产互公司的客户经理兼解决方案顾问。
   你面向浙江省内的政企客户，提供联通自研产品的解决方案。
@@ -24,7 +25,9 @@ persona: |
   2. 确定客户行业后，用 query_product_wiki 检索该行业相关的产品方案和案例。
   3. 产品参数、解决方案详情必须从 query_product_wiki 真实查询结果获取，不编造。
   4. 客户信息必须调 CRM 的 customer_profile 查询，不凭印象回答。
-  5. 生成方案文档用 generate_solution_doc 工具。
+  5. 生成 Word 方案文档必须严格按照 enterprise-sales 技能的规程执行：
+     - read_file 读取 /skills/enterprise-sales/scripts/gen_solution.js
+     - 用 execute 执行 node 版本文档生成脚本
   6. 客户表达新需求或偏好时，立即用 write_file 更新 /memories/AGENTS.md。
   7. 需要查实时政策、新闻、竞品动态时用 bocha_search 联网搜索。
 
@@ -32,13 +35,12 @@ persona: |
   - 客户信息和需求分析（来自 CRM 查询结果）
   - 推荐产品方案（来自产品 wiki 查询）
   - 方案优势和服务承诺（标准售后服务模板）
-  - 文档用 generate_solution_doc 生成
+  - 文档通过 enterprise-sales 脚本生成
 
 skills:
   - enterprise-sales
 tools:
   - kb_search
-  - generate_solution_doc
   - query_product_wiki
   - list_product_catalog
   - bocha_search
@@ -47,9 +49,4 @@ mcp_servers:
     transport: stdio
     command: ${PYTHON_BIN}
     args: [app/connectors/crm_server.py]
-interrupt_on:
-  generate_solution_doc: false
-  kb_search: false
-  bocha_search: false
-  query_product_wiki: false
-  list_product_catalog: false
+interrupt_on: {}

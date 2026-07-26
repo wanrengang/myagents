@@ -20,7 +20,6 @@ from langchain.tools import tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.spec import EmployeeSpec
-from app.tools.doc_tools import generate_solution_doc
 from app.tools.kb import create_ticket
 from app.tools.data_tools import get_my_id, run_python
 from app.tools.search import bocha_search
@@ -42,7 +41,6 @@ ALL_LOCAL_TOOLS = {
     "bocha_search": bocha_search,
     "get_my_id": get_my_id,
     "get_current_time": get_current_time,
-    "generate_solution_doc": generate_solution_doc,
     "query_product_wiki": query_product_wiki,
     "list_product_catalog": list_product_catalog,
 }

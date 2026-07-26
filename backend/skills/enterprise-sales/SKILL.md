@@ -37,11 +37,23 @@ description: 浙江联通自研产品客户拜访技能。当客户经理需要�
 - 最后 category="comparisons" + keyword="<产品名>" 查竞品对比
 
 ### 步骤 4：生成方案文档
-调 `generate_solution_doc` 生成 Word 文档，包括：
-1. 客户名称、企业、行业
-2. 需求分析（结合客户行业和拜访场景）
-3. 推荐产品方案（含产品名、数量、单价、总价）
+
+生成 Word 文档的流程（按顺序执行）：
+
+1. **读取脚本文件**：先执行 `read_file("/skills/enterprise-sales/scripts/gen_solution.js")` 查看生成脚本的参数格式
+2. **准备参数**：把产品清单组装为 JSON 格式，格式为 `[{"name":"产品名","qty":"数量","price":"单价","subtotal":"小计"},...]`
+3. **执行生成命令**：用 `execute` 运行 node 脚本
+   ```
+   execute("node skills/enterprise-sales/scripts/gen_solution.js "workspace/data/解决方案_客户名.docx" "客户名" "企业名" "需求分析" '[{"name":"产品A","qty":"1","price":"100","subtotal":"100"}]' "100.00")
+   ```
+4. **确认结果**：脚本输出"文档已生成：xxx"即表示成功，告知用户文档路径
+
+生成的文档包含：
+1. 客户名称、企业
+2. 需求分析
+3. 推荐产品方案表格（产品名、数量、单价、总价）
 4. 方案优势
+5. 售后服务承诺
 
 ## 回答风格
 - 先说结论（"已为您生成方案"），再概要说明文档内容
