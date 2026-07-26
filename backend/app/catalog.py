@@ -498,7 +498,8 @@ def seed_if_empty():
             skills=["data-analysis"], tools=[], kbs=[], sops=[], cons=[]),
         "xiaoxiao": dict(
             skills=["enterprise-sales"],
-            tools=["kb_search", "generate_solution_doc", "bocha_search"],
+            tools=["kb_search", "generate_solution_doc", "query_product_wiki",
+                   "list_product_catalog", "bocha_search"],
             kbs=["kb_product"], sops=[], cons=["crm"]),
     }
     for emp_id, sel in seeds.items():

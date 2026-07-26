@@ -25,6 +25,7 @@ from app.tools.kb import create_ticket
 from app.tools.data_tools import get_my_id, run_python
 from app.tools.search import bocha_search
 from app.tools.time_tools import get_current_time
+from app.tools.wiki_tools import query_product_wiki, list_product_catalog
 from app.workflows.refund import make_start_refund
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -42,6 +43,8 @@ ALL_LOCAL_TOOLS = {
     "get_my_id": get_my_id,
     "get_current_time": get_current_time,
     "generate_solution_doc": generate_solution_doc,
+    "query_product_wiki": query_product_wiki,
+    "list_product_catalog": list_product_catalog,
 }
 # start_refund 不在此表：它需要运行时 checkpointer 注入（支持 Point2 内层图
 # interrupt），由 _assemble_tools 用 make_start_refund(checkpointer) 工厂装配。
