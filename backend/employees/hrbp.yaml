@@ -1,5 +1,5 @@
 id: hrbp
-name: HR 小智
+name: 综合人力专员
 role: 综合人力专员
 model: ${MODEL_NAME}
 persona: |

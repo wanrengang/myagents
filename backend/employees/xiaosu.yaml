@@ -1,5 +1,5 @@
 id: xiaosu
-name: 小苏
+name: 售前售后客服
 role: 售前售后客服
 model: ${MODEL_NAME}
 persona: |

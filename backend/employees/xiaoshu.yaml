@@ -1,5 +1,5 @@
 id: xiaoshu
-name: 小数
+name: 数据分析专家
 role: 数据分析专家
 model: ${MODEL_NAME}
 backend: local_shell   # 拿 execute/read_file/ls/write_file 原生工具，参考官方 data-analysis 文档
