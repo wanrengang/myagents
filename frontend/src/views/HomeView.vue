@@ -19,12 +19,20 @@
 
     <!-- 统计卡片 -->
     <div class="stats-grid">
-      <div v-for="s in stats" :key="s.label" class="stat-card card card-hover">
+      <div v-for="s in basicStats" :key="s.label" class="stat-card card card-hover">
         <div class="stat-icon" :style="{ background: s.color }">{{ s.icon }}</div>
         <div class="stat-body">
           <div class="stat-value">{{ s.value }}</div>
           <div class="stat-label">{{ s.label }}</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Token 统计 -->
+    <div class="token-bar" v-if="tokenStats.length">
+      <div v-for="s in tokenStats" :key="s.label" class="token-item">
+        <span class="token-label">{{ s.icon }} {{ s.label }}</span>
+        <span class="token-value">{{ s.value }}</span>
       </div>
     </div>
 
@@ -106,13 +114,16 @@ const auth = useAuthStore()
 const employees = ref([])
 const loading = ref(true)
 
-const stats = reactive([
+const basicStats = reactive([
   { icon: '👥', label: '数字员工', value: '—', color: 'rgba(59,130,246,0.10)' },
   { icon: '⚡', label: '技能', value: '—', color: 'rgba(16,185,129,0.10)' },
   { icon: '🔧', label: '工具', value: '—', color: 'rgba(139,92,246,0.10)' },
   { icon: '💬', label: '会话', value: '—', color: 'rgba(245,158,11,0.10)' },
-  { icon: '🔤', label: '总 Token 消耗', value: '—', color: 'rgba(236,72,153,0.10)' },
-  { icon: '📊', label: '今日 Token', value: '—', color: 'rgba(34,211,238,0.10)' },
+])
+
+const tokenStats = reactive([
+  { icon: '🔤', label: '累计 Token 消耗', value: '—' },
+  { icon: '📊', label: '今日 Token 消耗', value: '—' },
 ])
 
 const gradients = [
@@ -138,14 +149,14 @@ async function loadData() {
     employees.value = Array.isArray(emps)
       ? emps.map(e => ({ id: e.id, ...e }))
       : []
-    stats[0].value = employees.value.length
-    stats[1].value = cat.skills?.length || 0
-    stats[2].value = cat.tools?.length || 0
+    basicStats[0].value = employees.value.length
+    basicStats[1].value = cat.skills?.length || 0
+    basicStats[2].value = cat.tools?.length || 0
     const convData = convRes.data
-    stats[3].value = Array.isArray(convData) ? convData.length : (convData?.total ?? 0)
+    basicStats[3].value = Array.isArray(convData) ? convData.length : (convData?.total ?? 0)
     const tokens = tokenRes.data || {}
-    stats[4].value = tokens.total_tokens ? (tokens.total_tokens / 1000).toFixed(0) + 'k' : '—'
-    stats[5].value = tokens.today_tokens ? (tokens.today_tokens / 1000).toFixed(0) + 'k' : '—'
+    tokenStats[0].value = tokens.total_tokens ? (tokens.total_tokens / 1000).toFixed(0) + 'k' : '—'
+    tokenStats[1].value = tokens.today_tokens ? (tokens.today_tokens / 1000).toFixed(0) + 'k' : '—'
   } catch {} finally { loading.value = false }
 }
 
@@ -194,28 +205,28 @@ onMounted(loadData)
 /* 统计卡片 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 12px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
 }
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 14px;
+  padding: 18px;
 }
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 .stat-value {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: #0f172a;
   line-height: 1;
@@ -223,8 +234,27 @@ onMounted(loadData)
 .stat-label {
   font-size: 13px;
   color: #64748b;
-  margin-top: 4px;
+  margin-top: 3px;
 }
+
+/* Token 统计栏 */
+.token-bar {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.token-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.token-label { font-size: 13px; color: #64748b; }
+.token-value { font-size: 18px; font-weight: 700; color: #0f172a; }
 
 /* 快捷入口 */
 .quick-grid {
