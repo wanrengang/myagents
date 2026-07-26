@@ -179,6 +179,25 @@ def list_users() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def list_users_paged(page: int = 1, page_size: int = 10) -> dict:
+    """分页查询用户列表，返回 {items, total, page, page_size, pages}。"""
+    page = max(1, page)
+    con = _conn()
+    total = con.execute("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL").fetchone()[0]
+    offset = (page - 1) * page_size
+    rows = con.execute(
+        "SELECT id,username,role,status,tenant_id,created_at FROM users WHERE deleted_at IS NULL ORDER BY created_at LIMIT ? OFFSET ?",
+        (page_size, offset)).fetchall()
+    con.close()
+    return {
+        "items": [dict(r) for r in rows],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": (total + page_size - 1) // page_size,
+    }
+
+
 def update_user(user_id: str, role: str | None = None, status: str | None = None) -> bool:
     con = _conn(); cur = con.cursor()
     if role is not None:

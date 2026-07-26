@@ -7,6 +7,12 @@
     </div>
 
     <n-data-table :columns="columns" :data="users" :bordered="false" size="small" />
+    <PaginationBar
+      :page="page"
+      :page-size="pageSize"
+      :total="total"
+      @update:page="onPageChange"
+    />
 
     <!-- 新建用户弹窗 -->
     <n-modal v-model:show="createModal" preset="card" title="新建用户" style="width:400px">
@@ -49,6 +55,7 @@ import { ref, reactive, computed, h, onMounted } from 'vue'
 import { NButton, NTag, NSpace, useDialog, useMessage } from 'naive-ui'
 import { useAuthStore } from '../stores/auth.js'
 import api from '../api.js'
+import PaginationBar from '../components/PaginationBar.vue'
 
 defineOptions({ name: 'UsersView' })
 
@@ -57,6 +64,10 @@ const message = useMessage()
 const auth = useAuthStore()
 
 const users = ref([])
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const loading = ref(false)
 
 // 新建用户
 const createModal = ref(false)
@@ -108,10 +119,17 @@ const columns = computed(() => [
 ])
 
 async function loadUsers() {
+  loading.value = true
   try {
-    const { data } = await api.get('/admin/users')
-    users.value = data || []
-  } catch {}
+    const { data } = await api.get('/admin/users', { params: { page: page.value, page_size: pageSize.value } })
+    users.value = data.items || []
+    total.value = data.total || 0
+  } catch {} finally { loading.value = false }
+}
+
+function onPageChange(p) {
+  page.value = p
+  loadUsers()
 }
 
 function openCreate() {

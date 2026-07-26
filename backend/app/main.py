@@ -852,7 +852,10 @@ class PasswordIn(BaseModel):
     password: str
 
 @admin_router.get("/users")
-async def list_users_api():
+async def list_users_api(page: int | None = None, page_size: int = 10):
+    """用户列表。带 page 时返回分页 {items,total,...}，否则返回全部。"""
+    if page:
+        return catalog.list_users_paged(page, page_size)
     return catalog.list_users()
 
 @admin_router.post("/users")
