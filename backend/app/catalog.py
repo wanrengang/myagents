@@ -516,6 +516,10 @@ def seed_if_empty():
             tools=["kb_search", "generate_solution_doc", "query_product_wiki",
                    "list_product_catalog", "bocha_search"],
             kbs=["kb_product", "kb_employee_handbook"], sops=[], cons=["crm"]),
+        "hrbp": dict(
+            skills=["hr-assistant"],
+            tools=["kb_search", "create_ticket", "bocha_search"],
+            kbs=["kb_employee_handbook"], sops=[], cons=["crm"]),
     }
     for emp_id, sel in seeds.items():
         spec = load_spec(str(ROOT / "app" / "employees" / f"{emp_id}.yaml"))
