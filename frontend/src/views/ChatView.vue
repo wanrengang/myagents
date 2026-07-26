@@ -60,20 +60,29 @@
       <div class="msgs" ref="msgsRef">
         <template v-for="(msg, idx) in messages" :key="idx">
           <!-- 用户消息 -->
-          <div v-if="msg.role === 'user'" class="msg user">
-            <div class="msg-text">{{ msg.content }}</div>
+          <div v-if="msg.role === 'user'" class="msg-wrapper user-wrapper">
+            <div class="msg user">
+              <div class="msg-text">{{ msg.content }}</div>
+            </div>
             <div class="msg-meta">
               <span class="msg-time">{{ msg.time }}</span>
-              <span class="msg-copy" @click="copyText(msg.content)">复制</span>
+              <span class="msg-copy" @click="copyText(msg.content)" title="复制">📋</span>
             </div>
           </div>
           <!-- Bot 消息 -->
-          <div v-else class="msg bot">
-            <div v-if="msg.html" class="md" v-html="msg.html"></div>
-            <div v-else-if="msg.content" class="md">{{ msg.content }}</div>
-            <div class="msg-meta bot-meta">
+          <div v-else class="msg-wrapper bot-wrapper">
+            <div class="msg bot">
+              <div v-if="msg.html" class="md" v-html="msg.html"></div>
+              <div v-else-if="msg.content" class="md">{{ msg.content }}</div>
+              <div v-else class="msg-loading">
+                <span class="loading-dot">.</span>
+                <span class="loading-dot">.</span>
+                <span class="loading-dot">.</span>
+              </div>
+            </div>
+            <div class="msg-meta">
               <span class="msg-time">{{ msg.time }}</span>
-              <span class="msg-copy" @click="copyText(msg.html || msg.content)">复制</span>
+              <span class="msg-copy" @click="copyText(msg.html || msg.content)" title="复制">📋</span>
             </div>
           </div>
           <!-- Trace（思考/工具） -->
@@ -301,11 +310,10 @@ async function send() {
   input.value = ''
   sending.value = true
   resetPipeline()
-  const now = fmtNow()
-  messages.value.push({ role: 'user', content: text, time: now })
+  const ts = fmtNow()
+  messages.value.push({ role: 'user', content: text, time: ts })
   const botIdx = messages.value.length
-  const now = fmtNow()
-  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false, time: now })
+  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false, time: ts })
   try {
     const resp = await fetch(`/api/conversations/${convId.value}/messages`, {
       method: 'POST',
@@ -324,8 +332,7 @@ async function decide(approvalId, decision, msgIdx) {
   const msg = messages.value[msgIdx]
   msg.approval.resolved = decision === 'approve' ? '✓ 已批准' : '✗ 已拒绝'
   const traceIdx = messages.value.length
-  const now = fmtNow()
-  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false, time: now })
+  messages.value.push({ role: 'bot', content: '', html: '', _md: '', trace: [], traceExpanded: false, time: fmtNow() })
   try {
     const resp = await fetch(`/api/approvals/${approvalId}/decision`, {
       method: 'POST',
@@ -506,8 +513,11 @@ onMounted(async () => {
 }
 .emp-meta { font-size: 12px; color: #64748b; flex: 1; }
 
-.msgs { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
-.msg { max-width: 76%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.7; word-break: break-word; animation: msg-in 0.25s ease-out; }
+.msgs { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.msg-wrapper { display: flex; flex-direction: column; max-width: 76%; gap: 2px; }
+.user-wrapper { align-self: flex-end; align-items: flex-end; }
+.bot-wrapper { align-self: flex-start; align-items: flex-start; }
+.msg { padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.7; word-break: break-word; animation: msg-in 0.25s ease-out; }
 @keyframes msg-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -515,12 +525,17 @@ onMounted(async () => {
 .msg.user { align-self: flex-end; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border-bottom-right-radius: 4px; }
 .msg.bot { align-self: flex-start; background: #ffffff; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
 .msg-text { }
-.msg-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; opacity: 0.6; }
-.bot-meta { color: #94a3b8; }
-.msg-meta .msg-time { }
-.msg-meta .msg-copy { cursor: pointer; transition: opacity 0.15s; }
-.msg-meta .msg-copy:hover { opacity: 1; text-decoration: underline; }
-.user .msg-meta { justify-content: flex-end; }
+.msg-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; }
+.bot-meta { }
+.user-meta { }
+.msg-copy { cursor: pointer; opacity: 0.4; transition: opacity 0.15s; font-size: 12px; line-height: 1; }
+.msg-copy:hover { opacity: 1; }
+.msg-loading { font-size: 24px; line-height: 1; letter-spacing: 2px; color: #3b82f6; }
+.loading-dot { animation: loading-pulse 1.4s infinite; opacity: 0; }
+.loading-dot:nth-child(1) { animation-delay: 0s; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes loading-pulse { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
 /* markdown 排版 */
 .md :deep(h1), .md :deep(h2), .md :deep(h3) { line-height: 1.3; margin: 14px 0 8px; font-weight: 600; }
