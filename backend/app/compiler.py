@@ -184,7 +184,7 @@ def build_backends(spec: EmployeeSpec, store, user_id: str | None = None):
     """构造 CompositeBackend：默认后端 + /skills、/memories 路由。"""
     if spec.backend == "local_shell":
         default_backend = LocalShellBackend(
-            root_dir=str(ROOT / "workspace"),
+            root_dir=str(ROOT),
             virtual_mode=True,
             env={"PATH": f"{VENV_BIN}:/usr/bin:/bin"},
             inherit_env=True,

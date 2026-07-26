@@ -658,6 +658,13 @@ async def upload_skill(file: UploadFile = File(...)):
         elif line.strip() == "" and name:
             break
 
+    if not name:
+        zf.close()
+        return {"error": "SKILL.md frontmatter 缺少 name 字段，请确保格式正确"}
+    if not description:
+        zf.close()
+        return {"error": "SKILL.md frontmatter 缺少 description 字段，请确保格式正确"}
+
     # skill_id 安全化：仅小写字母/数字/连字符
     raw = name or Path(file.filename).stem
     skill_id = re.sub(r"[^a-z0-9-]+", "-", raw.lower()).strip("-")

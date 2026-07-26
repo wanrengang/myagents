@@ -15,7 +15,7 @@
             <div class="card-desc">{{ it.description }}</div>
             <div class="card-acts">
               <n-button size="tiny" quaternary @click="viewSkillContent(it)">查看内容</n-button>
-              <n-button v-if="isAdmin" size="tiny" quaternary @click="openModal('skills', it)">编辑</n-button>
+              <n-button v-if="isAdmin" size="tiny" quaternary type="error" @click="delItem('skills', it.id)">删除</n-button>
             </div>
           </div>
         </div>
@@ -103,9 +103,24 @@
         <n-form-item v-if="!editing?.id" label="ID"><n-input v-model:value="modalForm.id" placeholder="唯一标识，如 my-skill" /></n-form-item>
         <n-form-item label="名称"><n-input v-model:value="modalForm.name" placeholder="显示名称" /></n-form-item>
         <n-form-item label="描述"><n-input v-model:value="modalForm.description" type="textarea" :rows="2" /></n-form-item>
-        <n-form-item v-if="modalType === 'skills'" label="SKILL.md 内容">
-          <n-input v-model:value="modalForm.content" type="textarea" :rows="12" placeholder="### 技能规程&#10;markdown 格式的技能正文" />
-          <template #extra>修改后需重启服务或重编译该员工才能生效（下次启动时重新播种）</template>
+        <n-form-item v-if="modalType === 'skills'" label="技能文件">
+          <n-upload
+            :default-upload="false"
+            accept=".zip"
+            :max="1"
+            @change="onSkillFileChange"
+          >
+            <n-button>选择 zip 文件</n-button>
+          </n-upload>
+          <template #extra>
+            上传包含 SKILL.md 的 zip 压缩包（支持 scripts/ 等附属目录），
+            id/名称/描述自动从 SKILL.md frontmatter 读取，同名技能自动覆盖更新
+          </template>
+        </n-form-item>
+        <n-form-item v-if="modalType === 'skills' && skillFile" label=" ">
+          <n-alert type="info" :title="'已选择：' + (skillFile.name || '')" style="width:100%">
+            保存后将自动解析 SKILL.md 中的 name/description 并注册技能
+          </n-alert>
         </n-form-item>
         <n-form-item v-if="modalType === 'sops'" label="内容"><n-input v-model:value="modalForm.content" type="textarea" :rows="8" /></n-form-item>
         <n-form-item v-if="modalType === 'connectors'" label="配置 JSON"><n-input v-model:value="modalForm.config" type="textarea" :rows="6" placeholder='{"transport":"stdio","command":"...","args":[...]}' /></n-form-item>
@@ -184,12 +199,17 @@ const editing = ref(null)
 const viewEntry = ref(null)
 const viewSkill = ref(null)
 const skillContent = ref('')
+const skillFile = ref(null)
 const modalForm = reactive({ id: '', name: '', description: '', content: '', config: '', title: '', keywords: '' })
 
 const modalTitleMap = {
   skills: '技能', tools: '工具', sops: 'SOP', connectors: '连接器', kbs: '知识库', kb_entries: '知识库条目',
 }
 const modalTitle = ref('')
+
+function onSkillFileChange({ file }) {
+  skillFile.value = file.file || file
+}
 
 function toggleSopContent(id) { sopExpanded[id] = !sopExpanded[id] }
 
@@ -231,6 +251,7 @@ function openModal(type, item = null) {
   editing.value = item
   modalTitle.value = (item ? '编辑' : '新建') + modalTitleMap[type]
   Object.keys(modalForm).forEach(k => modalForm[k] = '')
+  skillFile.value = null
   if (item) {
     modalForm.id = item.id || ''
     modalForm.name = item.name || ''
@@ -246,6 +267,24 @@ function openModal(type, item = null) {
 async function saveItem() {
   const type = modalType.value
   const isEdit = !!editing.value
+
+  // 技能类型：走 zip 上传接口
+  if (type === 'skills') {
+    if (!skillFile.value) { message.warning('请选择 zip 文件'); return }
+    const formData = new FormData()
+    formData.append('file', skillFile.value.file?.file || skillFile.value)
+    try {
+      const { data } = await api.post('/admin/skills/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (data.error) { message.error(data.error); return }
+      message.success('技能已上传：' + (data.name || data.id))
+      modalShow.value = false
+      await loadCatalog()
+    } catch (e) { message.error('上传失败：' + (e.response?.data?.error || e.message)) }
+    return
+  }
+
   const base = type === 'kb_entries' ? `/admin/knowledge-bases/${selectedKb.value}/entries` : `/admin/${type}`
   const payload = { ...modalForm }
   if (type === 'kb_entries' && payload.keywords) payload.keywords = payload.keywords.split(/[,，]/).map(s => s.trim()).filter(Boolean)
