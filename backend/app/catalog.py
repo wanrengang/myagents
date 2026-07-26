@@ -425,6 +425,13 @@ def seed_if_empty():
         ("kb_search", "知识库检索", "检索产品 FAQ 知识库", "local", None),
         ("create_ticket", "工单登记", "登记客服工单", "local", None),
         ("start_refund", "退款流程", "发起退款（需人工审批）", "local", json.dumps(["approve", "reject"])),
+        ("run_python", "运行Python", "运行 pandas/matplotlib 数据分析代码", "local", None),
+        ("bocha_search", "联网搜索", "联网搜索实时信息（博查）", "local", None),
+        ("get_my_id", "获取用户ID", "返回当前登录用户的 ID", "local", None),
+        ("get_current_time", "获取当前时间", "获取当前真实日期时间（东八区）", "local", None),
+        ("generate_solution_doc", "生成方案文档", "根据客户信息和推荐产品生成 Word 解决方案文档", "local", None),
+        ("query_product_wiki", "查询产品知识库", "查询浙江联通自研产品/解决方案/成功案例", "local", None),
+        ("list_product_catalog", "查看产品目录", "列出浙江联通自研产品的完整目录", "local", None),
     ]
     for t in tools:
         cur.execute("INSERT OR IGNORE INTO tools VALUES(?,?,?,?,?)", t)
