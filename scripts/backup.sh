@@ -20,8 +20,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATA_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
-BACKUP_DIR="${2:-$DATA_DIR/backups}"
+PROJECT_DIR="$SCRIPT_DIR/.."
+DATA_DIR="${1:-$PROJECT_DIR/data/db}"
+BACKUP_DIR="${2:-$PROJECT_DIR/backups}"
 KEEP="${BACKUP_KEEP:-7}"
 TS="$(date +%Y%m%d-%H%M%S)"
 ARCHIVE="$BACKUP_DIR/uniemployee-$TS.tar.gz"

@@ -1,6 +1,8 @@
 services:
   uniemployee:
-    build: .
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     image: uniemployee:latest
     container_name: uniemployee
     ports:
@@ -15,10 +17,12 @@ services:
       # 由 env_file 注入容器（.env 不进镜像、不提交仓库）。
       - .env
     volumes:
-      # SQLite 库持久化（容器删了数据还在）
+      # SQLite 库持久化
       - ./data:/app/data
+      # 后端技能目录
+      - ./backend/skills:/app/skills
       # 用户上传的自定义技能持久化
-      - ./skills-custom:/app/skills-custom
+      - ./backend/skills-custom:/app/skills-custom
       # 数据分析看板持久化
       - ./workspace:/app/workspace
     restart: unless-stopped

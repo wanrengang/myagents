@@ -11,8 +11,8 @@
 ```bash
 cd /Users/wrg/coding/myagents
 cp .env.example .env            # 填入 OPENAI_API_KEY / JWT_SECRET 等
-.venv/bin/pip install -r requirements.txt
-.venv/bin/uvicorn app.main:app --port 8787
+.venv/bin/pip install -r backend/requirements.txt
+PYTHONPATH=backend .venv/bin/uvicorn app.main:app --port 8787
 # 浏览器打开 http://localhost:8787
 ```
 
