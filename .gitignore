@@ -16,3 +16,4 @@ data/
 workspace/
 *.zip
 docker_err.txt
+frontend/dist/
