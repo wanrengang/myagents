@@ -111,6 +111,8 @@ const stats = reactive([
   { icon: '⚡', label: '技能', value: '—', color: 'rgba(16,185,129,0.10)' },
   { icon: '🔧', label: '工具', value: '—', color: 'rgba(139,92,246,0.10)' },
   { icon: '💬', label: '会话', value: '—', color: 'rgba(245,158,11,0.10)' },
+  { icon: '🔤', label: '总 Token 消耗', value: '—', color: 'rgba(236,72,153,0.10)' },
+  { icon: '📊', label: '今日 Token', value: '—', color: 'rgba(34,211,238,0.10)' },
 ])
 
 const gradients = [
@@ -125,10 +127,11 @@ function empGradient(id) {
 
 async function loadData() {
   try {
-    const [catalogRes, empRes, convRes] = await Promise.all([
+    const [catalogRes, empRes, convRes, tokenRes] = await Promise.all([
       api.get('/catalog'),
       api.get('/employees'),
       api.get('/conversations', { params: { limit: 0 } }),
+      api.get('/traces/stats'),
     ])
     const cat = catalogRes.data
     const emps = empRes.data || []
@@ -140,6 +143,9 @@ async function loadData() {
     stats[2].value = cat.tools?.length || 0
     const convData = convRes.data
     stats[3].value = Array.isArray(convData) ? convData.length : (convData?.total ?? 0)
+    const tokens = tokenRes.data || {}
+    stats[4].value = tokens.total_tokens ? (tokens.total_tokens / 1000).toFixed(0) + 'k' : '—'
+    stats[5].value = tokens.today_tokens ? (tokens.today_tokens / 1000).toFixed(0) + 'k' : '—'
   } catch {} finally { loading.value = false }
 }
 
@@ -188,8 +194,8 @@ onMounted(loadData)
 /* 统计卡片 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
   margin-bottom: 32px;
 }
 .stat-card {

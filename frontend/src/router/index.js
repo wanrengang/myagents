@@ -1,5 +1,6 @@
 // 路由定义：落地页 → 登录页 → 管理后台（含鉴权守卫）
 import { createRouter, createWebHistory } from 'vue-router'
+import PlaceholderView from '../components/PlaceholderView.vue'
 
 const routes = [
   {
@@ -24,6 +25,7 @@ const routes = [
       { path: 'admin', name: 'admin', component: () => import('../views/AdminView.vue') },
       { path: 'users', name: 'users', component: () => import('../views/UsersView.vue') },
       { path: 'resources', name: 'resources', component: () => import('../views/ResourcesView.vue') },
+      { path: 'im', name: 'im', component: PlaceholderView, props: { title: 'IM 频道', icon: '💬' } },
       { path: 'change-password', name: 'change-password', component: () => import('../views/ChangePasswordView.vue') },
     ],
   },

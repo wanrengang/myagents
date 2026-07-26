@@ -544,6 +544,12 @@ async def list_conv_traces(conv_id: str, user: dict = Depends(auth.get_current_u
     return {"conv_id": conv_id, "title": meta.get("title", ""),
             "employee_id": meta.get("employee_id", ""), "runs": traces.list_runs(conv_id)}
 
+@app.get("/api/traces/stats")
+async def trace_token_stats(user: dict = Depends(auth.get_current_user)):
+    """Token 使用统计（总数 + 今日数），首页展示用。"""
+    return traces.token_stats()
+
+
 @app.get("/api/traces/{run_id}")
 async def get_trace_detail(run_id: str, user: dict = Depends(auth.get_current_user_or_fallback)):
     """单次运行的完整执行过程（LLM/工具事件时间线）。属主或管理员可看。"""

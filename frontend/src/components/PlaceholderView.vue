@@ -3,7 +3,7 @@
   <div class="placeholder">
     <div class="icon">{{ icon }}</div>
     <h2>{{ title }}</h2>
-    <p>该页面正在迁移至新前端框架，敬请期待</p>
+    <p>正在开发中，敬请期待</p>
     <n-button tag="a" href="/" type="primary" ghost style="margin-top:12px">返回首页</n-button>
   </div>
 </template>

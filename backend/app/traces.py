@@ -146,6 +146,19 @@ def get_run(run_id: str) -> dict | None:
         return None
 
 
+def token_stats() -> dict:
+    """返回 token 使用统计：总数 + 今日数。"""
+    try:
+        with _conn() as con:
+            total = con.execute("SELECT COALESCE(SUM(total_tokens),0) FROM runs WHERE status!='running'").fetchone()[0]
+            today = con.execute(
+                "SELECT COALESCE(SUM(total_tokens),0) FROM runs WHERE status!='running' AND DATE(started_at)=DATE('now')"
+            ).fetchone()[0]
+        return {"total_tokens": total, "today_tokens": today}
+    except Exception:
+        return {"total_tokens": 0, "today_tokens": 0}
+
+
 # ---------------------------------------------------------------------------
 # 事件写入（回调用）
 # ---------------------------------------------------------------------------

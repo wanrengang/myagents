@@ -532,8 +532,9 @@ onMounted(async () => {
 .msg-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; }
 .bot-meta { }
 .user-meta { }
-.msg-copy { cursor: pointer; opacity: 0.4; transition: opacity 0.15s; font-size: 12px; line-height: 1; }
+.msg-copy { cursor: pointer; opacity: 0.4; transition: opacity 0.15s; font-size: 12px; line-height: 1; position: relative; }
 .msg-copy:hover { opacity: 1; }
+.msg-copy:hover::after { content: '复制'; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 4px); background: #334155; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
 .msg-loading { font-size: 24px; line-height: 1; letter-spacing: 2px; color: #3b82f6; }
 .loading-dot { animation: loading-pulse 1.4s infinite; opacity: 0; }
 .loading-dot:nth-child(1) { animation-delay: 0s; }
