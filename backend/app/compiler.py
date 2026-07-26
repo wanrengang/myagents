@@ -20,6 +20,7 @@ from langchain.tools import tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.spec import EmployeeSpec
+from app.tools.doc_tools import generate_solution_doc
 from app.tools.kb import create_ticket
 from app.tools.data_tools import get_my_id, run_python
 from app.tools.search import bocha_search
@@ -40,6 +41,7 @@ ALL_LOCAL_TOOLS = {
     "bocha_search": bocha_search,
     "get_my_id": get_my_id,
     "get_current_time": get_current_time,
+    "generate_solution_doc": generate_solution_doc,
 }
 # start_refund 不在此表：它需要运行时 checkpointer 注入（支持 Point2 内层图
 # interrupt），由 _assemble_tools 用 make_start_refund(checkpointer) 工厂装配。

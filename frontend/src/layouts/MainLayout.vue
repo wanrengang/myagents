@@ -20,7 +20,6 @@
       </div>
 
       <div class="nav-section">
-        <div class="nav-section-title" v-if="!collapsed">导航</div>
         <n-menu
           :collapsed="collapsed"
           :collapsed-width="64"
@@ -32,7 +31,6 @@
       </div>
 
       <div class="nav-section bottom-section">
-        <div class="nav-section-title" v-if="!collapsed">账号</div>
         <n-menu
           :collapsed="collapsed"
           :collapsed-width="64"
@@ -68,11 +66,7 @@
 
       <!-- 内容 -->
       <n-layout-content class="app-content">
-        <router-view v-slot="{ Component }">
-          <keep-alive>
-            <component :is="Component" />
-          </keep-alive>
-        </router-view>
+        <router-view :key="route.name" />
       </n-layout-content>
     </n-layout>
   </n-layout>
@@ -100,7 +94,6 @@ const mainNavOptions = [
   { label: '对话工作台', key: 'chat', icon: iconEl('<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
   { label: '会话历史', key: 'history', icon: iconEl('<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
   { label: '资源中心', key: 'resources', icon: iconEl('<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
-  { label: '执行过程', key: 'trace', icon: iconEl('<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
 ]
 
 const adminOnlyNavOptions = [
@@ -110,7 +103,6 @@ const adminOnlyNavOptions = [
 
 const bottomNavOptions = [
   { label: '返回首页', key: 'landing', icon: iconEl('<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
-  { label: '修改密码', key: 'change-password', icon: iconEl('<path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
 ]
 
 const pageTitleMap = {
