@@ -16,8 +16,7 @@
           <a href="#capabilities" @click.prevent="scrollTo('capabilities')">能力</a>
           <a href="#how" @click.prevent="scrollTo('how')">工作方式</a>
           <a href="#matrix" @click.prevent="scrollTo('matrix')">岗位</a>
-          <a href="#cases" @click.prevent="scrollTo('cases')">案例</a>
-        </div>
+          <a @click.prevent="goCases">案例</a>
       </div>
     </nav>
 
@@ -225,11 +224,6 @@ onMounted(() => {
   observe(howRef.value, howVisible)
   observe(matrixRef.value, matrixVisible)
   observe(ctaRef.value, ctaVisible)
-
-  // 加载员工案例数据
-  api.get('/employees').then(({ data }) => {
-    caseEmployees.value = data || []
-  }).catch(() => {})
 })
 
 onUnmounted(() => {
@@ -249,6 +243,12 @@ function goToApp(routeName) {
   const token = localStorage.getItem('token')
   if (token) router.push(routeName ? { name: routeName } : '/app/home')
   else router.push('/login?next=' + (routeName ? `/app/${routeName}` : '/app/home'))
+}
+
+function goCases() {
+  const token = localStorage.getItem('token')
+  if (token) router.push({ name: 'cases' })
+  else router.push('/login?next=/app/cases')
 }
 </script>
 
@@ -651,7 +651,6 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 .m-desc { font-size: 0.85rem; color: var(--text-2); line-height: 1.6; margin-bottom: 14px; }
 .m-status { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-2); }
 
-/* 案例 */
 /* CTA */
 .cta-section {
   padding: 160px 0;
