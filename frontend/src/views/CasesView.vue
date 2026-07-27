@@ -1,10 +1,6 @@
 <!-- 案例列表页：展示所有数字员工列表，点击进入详情 -->
 <template>
   <div class="cases-page">
-    <div class="page-header">
-      <h1 class="page-title">数字员工案例</h1>
-      <p class="page-desc">探索各岗位数字员工的能力与应用场景</p>
-    </div>
     <div class="case-grid">
       <div v-for="emp in employees" :key="emp.id" class="case-card card-hover" @click="goDetail(emp.id)">
         <div class="case-avatar" :style="{ background: empGradient(emp.id) }">{{ (emp.name || emp.id).charAt(0) }}</div>
@@ -52,9 +48,6 @@ function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
 
 <style scoped>
 .cases-page { padding: 32px 40px 64px; min-width: 1000px; }
-.page-header { margin-bottom: 32px; }
-.page-title { font-size: 24px; font-weight: 700; color: #0f172a; }
-.page-desc { font-size: 14px; color: #64748b; margin-top: 6px; }
 .case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
 .case-card {
   display: flex; align-items: center; gap: 18px;

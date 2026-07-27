@@ -134,27 +134,6 @@
       </div>
     </section>
 
-    <!-- 案例 -->
-    <section class="cases-section" id="cases" ref="casesRef">
-      <div class="container">
-        <div class="section-header" :class="{ reveal: true, visible: casesVisible }">
-          <h2 class="section-title">数字员工案例</h2>
-          <p class="section-subtitle">了解各岗位数字员工的能力与应用场景。</p>
-        </div>
-        <div class="cases-mock" :class="{ reveal: true, visible: casesVisible }">
-          <div class="case-card-row" v-for="emp in caseEmployees" :key="emp.id">
-            <div class="case-avatar" :style="caseAvatarStyle(emp.id)">{{ (emp.name || emp.id).charAt(0) }}</div>
-            <div class="case-info">
-              <div class="case-name">{{ emp.name }}</div>
-              <div class="case-role">{{ emp.role }}</div>
-            </div>
-            <span class="case-tag-label" v-for="sk in (emp.skills || []).slice(0, 2)" :key="sk">{{ sk }}</span>
-          </div>
-          <a class="cases-more" @click="goToApp('cases')">查看全部案例 →</a>
-        </div>
-      </div>
-    </section>
-
     <!-- CTA -->
     <section class="cta-section" id="cta" ref="ctaRef">
       <div class="cta-bg"></div>
@@ -189,7 +168,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api.js'
 
 const router = useRouter()
 
@@ -198,15 +176,10 @@ const capsVisible = ref(false)
 const howVisible = ref(false)
 const matrixVisible = ref(false)
 const ctaVisible = ref(false)
-const casesVisible = ref(false)
-const caseEmployees = ref([])
-
 const capsRef = ref(null)
 const howRef = ref(null)
 const matrixRef = ref(null)
 const ctaRef = ref(null)
-const casesRef = ref(null)
-
 const capabilities = [
   { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="2 3"/></svg>', title: '理解工作', desc: '理解需求，制定执行计划。' },
   { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3"/><line x1="10.5" y1="10.5" x2="13.5" y2="13.5"/></svg>', title: '连接企业', desc: '连接知识、系统和业务能力。' },
@@ -233,16 +206,6 @@ const matrix = [
   { initial: '财', role: '财务顾问', desc: '财务分析与预算管理', status: '在线', dotClass: 'dot-ok', avatarStyle: 'background:linear-gradient(135deg,var(--amber),var(--indigo));box-shadow:0 0 12px rgba(251,185,105,.3)' },
 ]
 
-const caseGradients = [
-  'linear-gradient(135deg,#3b82f6,#06b6d4)',
-  'linear-gradient(135deg,#8b5cf6,#ec4899)',
-  'linear-gradient(135deg,#10b981,#06b6d4)',
-  'linear-gradient(135deg,#f59e0b,#ef4444)',
-]
-function caseAvatarStyle(id) {
-  const g = caseGradients[(id?.charCodeAt(0) || 0) % caseGradients.length]
-  return `background:${g};box-shadow:0 0 12px rgba(59,130,246,.2)`
-}
 
 let observers = []
 
@@ -262,9 +225,6 @@ onMounted(() => {
   observe(howRef.value, howVisible)
   observe(matrixRef.value, matrixVisible)
   observe(ctaRef.value, ctaVisible)
-  observe(casesRef.value, casesVisible)
-
-  window.addEventListener('scroll', onScroll, { passive: true })
 
   // 加载员工案例数据
   api.get('/employees').then(({ data }) => {
@@ -692,23 +652,6 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 .m-status { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-2); }
 
 /* 案例 */
-.cases-section { padding: 140px 0; }
-.cases-mock { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-.case-card-row {
-  display: flex; align-items: center; gap: 16px;
-  padding: 16px 20px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  transition: all 0.25s;
-}
-.case-card-row:hover { border-color: var(--border-2); background: var(--surface-2); transform: translateX(4px); }
-.case-avatar { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff; flex-shrink: 0; }
-.case-info { flex: 1; min-width: 0; }
-.case-name { font-size: 0.95rem; font-weight: 450; color: var(--text-1); }
-.case-role { font-size: 0.8rem; color: var(--text-2); margin-top: 2px; }
-.case-tag-label { font-size: 0.75rem; background: var(--surface-2); color: var(--text-2); padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); }
-.cases-more { display: inline-block; margin-top: 20px; text-align: center; font-size: 0.9rem; color: var(--indigo); cursor: pointer; transition: color 0.2s; }
-.cases-more:hover { color: var(--text-1); }
-
 /* CTA */
 .cta-section {
   padding: 160px 0;
@@ -811,8 +754,6 @@ footer {
 @media (max-width: 768px) { .nav-links { display: none; } }
 @media (max-width: 640px) {
   .container { padding: 0 24px; }
-  .caps, .how, .matrix, .cases-section { padding: 96px 0; }
-  .cta-section { padding: 120px 0; }
   .net-card { width: 128px; padding: 12px 11px; }
 }
 </style>
