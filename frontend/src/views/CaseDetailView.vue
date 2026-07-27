@@ -1,11 +1,11 @@
-<!-- 案例详情页：单个数字员工的详细介绍（独立页面） -->
-<template>
-  <div class="detail-page">
-    <nav class="nav">
+<!-- 导航（与 LandingView 一致） -->
+    <nav class="nav" :class="{ scrolled: navScrolled }">
       <div class="nav-inner">
         <a href="/" class="nav-logo">UniEmployee</a>
         <div class="nav-links">
-          <a href="/">首页</a>
+          <a href="/#capabilities">能力</a>
+          <a href="/#how">工作方式</a>
+          <a href="/#matrix">岗位</a>
           <a href="/cases">案例</a>
           <a class="active">详情</a>
         </div>
@@ -47,13 +47,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../api.js'
 
 defineOptions({ name: 'CaseDetailView' })
 const router = useRouter()
 const route = useRoute()
+const navScrolled = ref(false)
 const emp = ref(null)
 
 const gradients = [
@@ -64,22 +65,29 @@ const gradients = [
 ]
 function empGradient(id) { return gradients[(id?.charCodeAt(0) || 0) % gradients.length] }
 
+function onScroll() { navScrolled.value = window.scrollY > 40 }
+
 onMounted(async () => {
+  window.addEventListener('scroll', onScroll, { passive: true })
   try {
     const { data } = await api.get(`/admin/employees/${route.params.id}`)
     emp.value = data.error ? null : data
   } catch { emp.value = null }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
 <style scoped>
 .detail-page { min-height: 100vh; background: #08090C; color: #F5F5F7; }
 .nav {
-  position: sticky; top: 0; z-index: 100; height: 64px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 64px;
   display: flex; align-items: center;
-  background: rgba(8,9,12,.72); backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: transparent; transition: all 0.3s;
 }
+.nav.scrolled { background: rgba(8,9,12,.72); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.07); }
 .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; display: flex; align-items: center; justify-content: space-between; }
 .nav-logo { font-size: 18px; font-weight: 700; color: #F5F5F7; text-decoration: none; }
 .nav-links { display: flex; gap: 32px; }

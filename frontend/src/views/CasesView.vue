@@ -1,12 +1,14 @@
 <!-- 案例列表页：展示所有数字员工列表，点击进入详情（独立页面，无需登录） -->
 <template>
   <div class="cases-page">
-    <!-- 导航 -->
-    <nav class="nav">
+    <!-- 导航（与 LandingView 一致） -->
+    <nav class="nav" :class="{ scrolled: navScrolled }">
       <div class="nav-inner">
         <a href="/" class="nav-logo">UniEmployee</a>
         <div class="nav-links">
-          <a href="/">首页</a>
+          <a href="/#capabilities">能力</a>
+          <a href="/#how">工作方式</a>
+          <a href="/#matrix">岗位</a>
           <a class="active">案例</a>
         </div>
       </div>
@@ -35,12 +37,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api.js'
 
 defineOptions({ name: 'CasesView' })
 const router = useRouter()
+const navScrolled = ref(false)
 const employees = ref([])
 const loading = ref(true)
 
@@ -52,11 +55,20 @@ const gradients = [
 ]
 function empGradient(id) { return gradients[(id?.charCodeAt(0) || 0) % gradients.length] }
 
+function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
+
+function onScroll() { navScrolled.value = window.scrollY > 40 }
+
 onMounted(async () => {
+  window.addEventListener('scroll', onScroll, { passive: true })
   try {
     const { data } = await api.get('/employees')
     employees.value = data || []
   } catch {} finally { loading.value = false }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 
 function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
@@ -65,11 +77,11 @@ function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
 <style scoped>
 .cases-page { min-height: 100vh; background: var(--bg, #08090C); color: var(--text-1, #F5F5F7); }
 .nav {
-  position: sticky; top: 0; z-index: 100; height: 64px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 64px;
   display: flex; align-items: center;
-  background: rgba(8,9,12,.72); backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: transparent; transition: all 0.3s;
 }
+.nav.scrolled { background: rgba(8,9,12,.72); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.07); }
 .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; display: flex; align-items: center; justify-content: space-between; }
 .nav-logo { font-size: 18px; font-weight: 700; color: #F5F5F7; text-decoration: none; }
 .nav-links { display: flex; gap: 32px; }
