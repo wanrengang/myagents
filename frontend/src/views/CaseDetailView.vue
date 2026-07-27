@@ -1,8 +1,20 @@
-<!-- 案例详情页：单个数字员工的详细介绍 -->
+<!-- 案例详情页：单个数字员工的详细介绍（独立页面） -->
 <template>
   <div class="detail-page">
-    <div class="detail-back" @click="router.push({name:'cases'})">← 返回案例列表</div>
-    <div v-if="!emp" class="empty-hint">员工不存在</div>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">UniEmployee</a>
+        <div class="nav-links">
+          <a href="/">首页</a>
+          <a href="/cases">案例</a>
+          <a class="active">详情</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="detail-content">
+      <div class="detail-back" @click="router.push({name:'cases'})">← 返回案例列表</div>
+      <div v-if="!emp" class="empty-hint">员工不存在</div>
     <template v-else>
       <div class="detail-header">
         <div class="detail-avatar" :style="{ background: empGradient(emp.id) }">{{ (emp.name || emp.id).charAt(0) }}</div>
@@ -30,6 +42,7 @@
         <p class="text-muted">详细的能力介绍和典型案例正在完善中，敬请期待</p>
       </div>
     </template>
+    </div>
   </div>
 </template>
 
@@ -60,7 +73,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.detail-page { padding: 32px 40px 64px; max-width: 800px; }
+.detail-page { min-height: 100vh; background: #f8fafc; }
+.nav {
+  position: sticky; top: 0; z-index: 100; height: 64px;
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(20px);
+  border-bottom: 1px solid #e2e8f0;
+}
+.nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-size: 18px; font-weight: 700; color: #0f172a; text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { font-size: 14px; color: #64748b; text-decoration: none; cursor: pointer; }
+.nav-links a:hover, .nav-links a.active { color: #0f172a; font-weight: 500; }
+.detail-content { max-width: 800px; margin: 0 auto; padding: 32px 32px 64px; }
 .detail-back { font-size: 13px; color: #3b82f6; cursor: pointer; margin-bottom: 24px; display: inline-block; }
 .detail-back:hover { text-decoration: underline; }
 .detail-header { display: flex; align-items: center; gap: 20px; margin-bottom: 32px; }

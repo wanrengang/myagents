@@ -247,9 +247,7 @@ function goToApp(routeName) {
 }
 
 function goCases() {
-  const token = localStorage.getItem('token')
-  if (token) router.push({ name: 'cases' })
-  else router.push('/login?next=/app/cases')
+  router.push({ name: 'cases' })
 }
 </script>
 

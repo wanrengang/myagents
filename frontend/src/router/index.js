@@ -9,6 +9,16 @@ const routes = [
     component: () => import('../views/LandingView.vue'),
   },
   {
+    path: '/cases',
+    name: 'cases',
+    component: () => import('../views/CasesView.vue'),
+  },
+  {
+    path: '/cases/:id',
+    name: 'case-detail',
+    component: () => import('../views/CaseDetailView.vue'),
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../views/LoginView.vue'),
@@ -24,8 +34,6 @@ const routes = [
       { path: 'trace', name: 'trace', component: () => import('../views/TraceView.vue') },
       { path: 'admin', name: 'admin', component: () => import('../views/AdminView.vue') },
       { path: 'users', name: 'users', component: () => import('../views/UsersView.vue') },
-      { path: 'cases', name: 'cases', component: () => import('../views/CasesView.vue') },
-      { path: 'cases/:id', name: 'case-detail', component: () => import('../views/CaseDetailView.vue') },
       { path: 'resources', name: 'resources', component: () => import('../views/ResourcesView.vue') },
       { path: 'im', name: 'im', component: PlaceholderView, props: { title: 'IM 频道', icon: '💬' } },
       { path: 'change-password', name: 'change-password', component: () => import('../views/ChangePasswordView.vue') },
@@ -41,7 +49,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   // 落地页和登录页不需要登录
-  if (to.name === 'landing' || to.name === 'login') {
+  if (to.name === 'landing' || to.name === 'login' || to.name === 'cases' || to.name === 'case-detail') {
     // 已登录用户访问登录页 → 跳到后台
     if (to.name === 'login' && token) {
       next({ name: 'home' })

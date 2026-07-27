@@ -1,19 +1,35 @@
-<!-- 案例列表页：展示所有数字员工列表，点击进入详情 -->
+<!-- 案例列表页：展示所有数字员工列表，点击进入详情（独立页面，无需登录） -->
 <template>
   <div class="cases-page">
-    <div class="case-grid">
-      <div v-for="emp in employees" :key="emp.id" class="case-card card-hover" @click="goDetail(emp.id)">
-        <div class="case-avatar" :style="{ background: empGradient(emp.id) }">{{ (emp.name || emp.id).charAt(0) }}</div>
-        <div class="case-info">
-          <div class="case-name">{{ emp.name }}</div>
-          <div class="case-role">{{ emp.role }}</div>
-          <div class="case-tags">
-            <span class="case-tag" v-for="sk in (emp.skills || []).slice(0, 3)" :key="sk">{{ sk }}</span>
-          </div>
+    <!-- 导航 -->
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">UniEmployee</a>
+        <div class="nav-links">
+          <a href="/">首页</a>
+          <a class="active">案例</a>
         </div>
-        <div class="case-arrow">→</div>
       </div>
-      <div v-if="!employees.length && !loading" class="empty-hint">暂无案例数据</div>
+    </nav>
+
+    <div class="cases-content">
+      <h1 class="page-title">数字员工案例</h1>
+      <p class="page-desc">了解各岗位数字员工的能力与应用场景</p>
+
+      <div class="case-grid">
+        <div v-for="emp in employees" :key="emp.id" class="case-card card-hover" @click="goDetail(emp.id)">
+          <div class="case-avatar" :style="{ background: empGradient(emp.id) }">{{ (emp.name || emp.id).charAt(0) }}</div>
+          <div class="case-info">
+            <div class="case-name">{{ emp.name }}</div>
+            <div class="case-role">{{ emp.role }}</div>
+            <div class="case-tags">
+              <span class="case-tag" v-for="sk in (emp.skills || []).slice(0, 3)" :key="sk">{{ sk }}</span>
+            </div>
+          </div>
+          <div class="case-arrow">→</div>
+        </div>
+        <div v-if="!employees.length && !loading" class="empty-hint">暂无案例数据</div>
+      </div>
     </div>
   </div>
 </template>
@@ -47,7 +63,21 @@ function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
 </script>
 
 <style scoped>
-.cases-page { padding: 32px 40px 64px; min-width: 1000px; }
+.cases-page { min-height: 100vh; background: #f8fafc; }
+.nav {
+  position: sticky; top: 0; z-index: 100; height: 64px;
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(20px);
+  border-bottom: 1px solid #e2e8f0;
+}
+.nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-size: 18px; font-weight: 700; color: #0f172a; text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { font-size: 14px; color: #64748b; text-decoration: none; cursor: pointer; }
+.nav-links a:hover, .nav-links a.active { color: #0f172a; font-weight: 500; }
+.cases-content { max-width: 1200px; margin: 0 auto; padding: 48px 32px 64px; }
+.page-title { font-size: 28px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.page-desc { font-size: 15px; color: #64748b; margin-bottom: 36px; }
 .case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
 .case-card {
   display: flex; align-items: center; gap: 18px;
@@ -55,11 +85,7 @@ function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
   border-radius: 14px; cursor: pointer; transition: all 0.2s;
 }
 .case-card:hover { border-color: #3b82f6; box-shadow: 0 2px 12px rgba(59,130,246,0.08); transform: translateY(-1px); }
-.case-avatar {
-  width: 56px; height: 56px; border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700; color: #fff; flex-shrink: 0;
-}
+.case-avatar { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .case-info { flex: 1; min-width: 0; }
 .case-name { font-size: 16px; font-weight: 600; color: #0f172a; }
 .case-role { font-size: 13px; color: #64748b; margin-top: 2px; }
