@@ -29,8 +29,8 @@
           <h1 class="hero-title">构建你的专属<br><span class="grad">数字员工团队</span></h1>
           <p class="hero-subtitle">UniEmployee 是企业级数字员工平台，帮助企业快速创建、管理和运营数字员工，让 AI 从回答问题走向持续完成工作。</p>
           <div class="hero-actions">
-            <a class="btn-p" @click="goToApp">立即体验</a>
-            <a class="btn-s" @click="goToApp">预约演示</a>
+            <a href="/app/home" class="btn-p">立即体验</a>
+            <a href="/app/home" class="btn-s">预约演示</a>
           </div>
         </div>
 
@@ -141,8 +141,8 @@
         <h2 class="cta-title">未来，每一家企业<br>都将拥有自己的<span class="grad">数字员工团队</span></h2>
         <p class="cta-sub">让数字员工成为企业真正的生产力。</p>
         <div class="cta-actions">
-          <a class="btn-p" @click="goToApp">立即体验</a>
-          <a class="btn-s" @click="goToApp">预约演示</a>
+          <a href="/app/home" class="btn-p">立即体验</a>
+          <a href="/app/home" class="btn-s">预约演示</a>
         </div>
       </div>
     </section>
