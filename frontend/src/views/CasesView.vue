@@ -70,8 +70,6 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
 })
-
-function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
 </script>
 
 <style scoped>
@@ -83,7 +81,16 @@ function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
 }
 .nav.scrolled { background: rgba(8,9,12,.72); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.07); }
 .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { font-size: 18px; font-weight: 700; color: #F5F5F7; text-decoration: none; }
+.nav-logo {
+  font-size: 1.1rem;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #5EEAD4, #818CF8, #FBB969);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none;
+}
 .nav-links { display: flex; gap: 32px; }
 .nav-links a { font-size: 14px; color: #9CA3AF; text-decoration: none; cursor: pointer; }
 .nav-links a:hover, .nav-links a.active { color: #F5F5F7; }
