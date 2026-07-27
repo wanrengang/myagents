@@ -17,8 +17,9 @@
           <a href="#how" @click.prevent="scrollTo('how')">工作方式</a>
           <a href="#matrix" @click.prevent="scrollTo('matrix')">岗位</a>
           <a @click.prevent="goCases">案例</a>
-      </div>
-    </nav>
+          </div>
+        </div>
+      </nav>
 
     <!-- Hero -->
     <section class="hero" id="hero">
