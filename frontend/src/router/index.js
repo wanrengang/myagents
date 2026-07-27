@@ -24,6 +24,8 @@ const routes = [
       { path: 'trace', name: 'trace', component: () => import('../views/TraceView.vue') },
       { path: 'admin', name: 'admin', component: () => import('../views/AdminView.vue') },
       { path: 'users', name: 'users', component: () => import('../views/UsersView.vue') },
+      { path: 'cases', name: 'cases', component: () => import('../views/CasesView.vue') },
+      { path: 'cases/:id', name: 'case-detail', component: () => import('../views/CaseDetailView.vue') },
       { path: 'resources', name: 'resources', component: () => import('../views/ResourcesView.vue') },
       { path: 'im', name: 'im', component: PlaceholderView, props: { title: 'IM 频道', icon: '💬' } },
       { path: 'change-password', name: 'change-password', component: () => import('../views/ChangePasswordView.vue') },

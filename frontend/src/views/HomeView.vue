@@ -169,9 +169,8 @@ onMounted(loadData)
 
 <style scoped>
 .home-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 32px 64px;
+  min-width: 1000px;
+  padding: 32px 40px 64px;
 }
 
 /* 欢迎横幅 */

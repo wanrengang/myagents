@@ -91,6 +91,7 @@ function iconEl(svg) {
 
 const mainNavOptions = [
   { label: '平台首页', key: 'home', icon: iconEl('<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
+  { label: '案例', key: 'cases', icon: iconEl('<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
   { label: '对话工作台', key: 'chat', icon: iconEl('<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
   { label: 'IM 频道', key: 'im', icon: iconEl('<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
   { label: '会话历史', key: 'history', icon: iconEl('<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>') },
@@ -110,7 +111,7 @@ const pageTitleMap = {
   home: '平台首页', chat: '对话工作台', history: '会话历史',
   trace: '执行过程', resources: '资源中心',
   admin: '员工管理', users: '用户管理', 'change-password': '修改密码',
-  im: 'IM 频道',
+  im: 'IM 频道', cases: '案例', 'case-detail': '案例详情',
 }
 const currentPageTitle = computed(() => pageTitleMap[route.name] || 'UniEmployee')
 

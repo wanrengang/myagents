@@ -79,4 +79,7 @@
 - [x] **StaffDeck supervisor 占端口问题排查** — 根因是 `dev_supervisor.py` 孤儿进程抢 5173
 - [x] **ChatView useRouter 未导入** — 导致 openTrace 报错
 - [x] **ChatView route 重复声明** — const route 定义两次导致 build 失败
+- [ ] **#41 Token 统计按用户隔离** — 首页 token 统计：管理员看全局，普通用户只看自己的消耗
+- [x] **ChatView useRouter 未导入** — 导致 openTrace 报错
+- [x] **ChatView route 重复声明** — const route 定义两次导致 build 失败
 - [x] `reactive` **未导入** — HistoryView 从 import 中误删了 reactive
