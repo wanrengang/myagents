@@ -63,34 +63,34 @@ function goDetail(id) { router.push({ name: 'case-detail', params: { id } }) }
 </script>
 
 <style scoped>
-.cases-page { min-height: 100vh; background: #f8fafc; }
+.cases-page { min-height: 100vh; background: var(--bg, #08090C); color: var(--text-1, #F5F5F7); }
 .nav {
   position: sticky; top: 0; z-index: 100; height: 64px;
   display: flex; align-items: center;
-  background: rgba(255,255,255,0.95); backdrop-filter: blur(20px);
-  border-bottom: 1px solid #e2e8f0;
+  background: rgba(8,9,12,.72); backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { font-size: 18px; font-weight: 700; color: #0f172a; text-decoration: none; }
+.nav-logo { font-size: 18px; font-weight: 700; color: #F5F5F7; text-decoration: none; }
 .nav-links { display: flex; gap: 32px; }
-.nav-links a { font-size: 14px; color: #64748b; text-decoration: none; cursor: pointer; }
-.nav-links a:hover, .nav-links a.active { color: #0f172a; font-weight: 500; }
-.cases-content { max-width: 1200px; margin: 0 auto; padding: 48px 32px 64px; }
-.page-title { font-size: 28px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
-.page-desc { font-size: 15px; color: #64748b; margin-bottom: 36px; }
+.nav-links a { font-size: 14px; color: #9CA3AF; text-decoration: none; cursor: pointer; }
+.nav-links a:hover, .nav-links a.active { color: #F5F5F7; }
+.cases-content { max-width: 1200px; margin: 0 auto; padding: 60px 32px 64px; }
+.page-title { font-size: 28px; font-weight: 300; color: #F5F5F7; margin-bottom: 8px; }
+.page-desc { font-size: 15px; color: #9CA3AF; margin-bottom: 40px; font-weight: 300; }
 .case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
 .case-card {
   display: flex; align-items: center; gap: 18px;
-  padding: 20px 24px; background: #fff; border: 1px solid #e2e8f0;
-  border-radius: 14px; cursor: pointer; transition: all 0.2s;
+  padding: 20px 24px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; cursor: pointer; transition: all 0.25s;
 }
-.case-card:hover { border-color: #3b82f6; box-shadow: 0 2px 12px rgba(59,130,246,0.08); transform: translateY(-1px); }
+.case-card:hover { border-color: rgba(255,255,255,0.13); background: rgba(255,255,255,0.045); transform: translateY(-2px); }
 .case-avatar { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .case-info { flex: 1; min-width: 0; }
-.case-name { font-size: 16px; font-weight: 600; color: #0f172a; }
-.case-role { font-size: 13px; color: #64748b; margin-top: 2px; }
+.case-name { font-size: 16px; font-weight: 450; color: #F5F5F7; }
+.case-role { font-size: 13px; color: #9CA3AF; margin-top: 2px; }
 .case-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.case-tag { font-size: 11px; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 6px; }
-.case-arrow { font-size: 18px; color: #94a3b8; flex-shrink: 0; }
-.empty-hint { padding: 40px; text-align: center; color: #94a3b8; font-size: 14px; }
+.case-tag { font-size: 11px; background: rgba(255,255,255,0.045); color: #9CA3AF; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.07); }
+.case-arrow { font-size: 18px; color: #5C5F66; flex-shrink: 0; }
+.empty-hint { padding: 40px; text-align: center; color: #5C5F66; font-size: 14px; font-weight: 300; }
 </style>
